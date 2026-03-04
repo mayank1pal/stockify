@@ -90,6 +90,40 @@ const API = {
             throw new Error('Analysis request failed');
         }
         return response.json();
+    },
+
+    // Copilot endpoints
+    async copilotAsk(request) {
+        const response = await fetch(`${this.baseUrl}/api/copilot/ask`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request)
+        });
+        return response.json();
+    },
+
+    async copilotAnalyzeStock(symbol) {
+        const response = await fetch(`${this.baseUrl}/api/copilot/analyze/${symbol}`, {
+            method: 'POST'
+        });
+        return response.json();
+    },
+
+    async copilotPortfolioReview() {
+        const response = await fetch(`${this.baseUrl}/api/copilot/portfolio-review`, {
+            method: 'POST'
+        });
+        return response.json();
+    },
+
+    async copilotGetAgents() {
+        const response = await fetch(`${this.baseUrl}/api/copilot/agents`);
+        return response.json();
+    },
+
+    async copilotGetReasoning(requestId) {
+        const response = await fetch(`${this.baseUrl}/api/copilot/reasoning/${requestId}`);
+        return response.json();
     }
 };
 
