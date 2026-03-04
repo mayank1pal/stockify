@@ -12,21 +12,42 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class GeminiService {
+public class GeminiService implements AIModelService {
 
     private final WebClient geminiWebClient;
-    
+
     @Qualifier("geminiApiKey")
     private final String apiKey;
-    
+
     @Value("${gemini.model:gemini-pro}")
     private String model;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public String getName() {
+        return "gemini";
+    }
+
+    @Override
+    public String analyze(String systemPrompt, String userPrompt) {
+        return analyzeWithPrompt(systemPrompt, userPrompt);
+    }
+
+    @Override
+    public CompletableFuture<String> analyzeAsync(String systemPrompt, String userPrompt) {
+        return CompletableFuture.supplyAsync(() -> analyze(systemPrompt, userPrompt));
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return apiKey != null && !apiKey.contains("placeholder");
+    }
 
     public String analyzeWithPrompt(String systemPrompt, String userPrompt) {
         try {
@@ -55,7 +76,7 @@ public class GeminiService {
                     .block();
 
             return extractTextFromResponse(response);
-            
+
         } catch (Exception e) {
             log.error("Error calling Gemini API: {}", e.getMessage());
             return generateFallbackResponse();
