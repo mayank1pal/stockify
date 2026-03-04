@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="StockMan - Your Portfolio Holdings">
+    <title>Holdings - StockMan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles/main.css">
+</head>
+
+<body>
+    <div class="page-wrapper">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#3b82f6" />
+                            <stop offset="100%" style="stop-color:#8b5cf6" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="40" height="40" rx="8" fill="url(#logoGrad)" />
+                    <path d="M10 25 L15 17 L20 21 L25 14 L30 19" stroke="white" stroke-width="2" stroke-linecap="round"
+                        fill="none" />
+                </svg>
+                <h1>StockMan</h1>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="/dashboard.html" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                        </svg>
+                        Dashboard
+                    </a></li>
+                <li class="nav-item"><a href="/holdings.html" class="nav-link active">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        </svg>
+                        Holdings
+                    </a></li>
+                <li class="nav-item"><a href="/analysis.html" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                        </svg>
+                        AI Analysis
+                    </a></li>
+                <li class="nav-item"><a href="/strategy.html" class="nav-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20V10" />
+                            <path d="M18 20V4" />
+                            <path d="M6 20v-4" />
+                        </svg>
+                        Strategy
+                    </a></li>
+            </ul>
+
+            <div style="margin-top: auto; padding-top: var(--space-lg); border-top: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
+                    <div
+                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center;">
+                        <span id="user-initial" style="font-weight: 700; color: white;">U</span>
+                    </div>
+                    <div>
+                        <div id="user-name" style="font-weight: 600; font-size: 0.875rem;">Loading...</div>
+                        <div style="color: var(--text-muted); font-size: 0.75rem;">Active</div>
+                    </div>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary btn-sm" style="width: 100%;">Logout</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl);">
+                <div>
+                    <h2>Portfolio Holdings</h2>
+                    <p>Your complete list of stock holdings</p>
+                </div>
+                <div style="display: flex; gap: var(--space-md);">
+                    <button id="sort-pnl" class="btn btn-secondary btn-sm">Sort by P&L</button>
+                    <button id="sort-value" class="btn btn-secondary btn-sm">Sort by Value</button>
+                </div>
+            </header>
+
+            <!-- Summary Stats -->
+            <div class="stats-grid" style="margin-bottom: var(--space-xl);">
+                <div class="stat-card">
+                    <div class="stat-label">Total Holdings</div>
+                    <div class="stat-value" id="total-holdings">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Profitable</div>
+                    <div class="stat-value" id="profitable-holdings" style="color: var(--success);">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">In Loss</div>
+                    <div class="stat-value" id="losing-holdings" style="color: var(--danger);">0</div>
+                </div>
+            </div>
+
+            <!-- Holdings Table -->
+            <div class="card">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Stock</th>
+                                <th>Qty</th>
+                                <th>Avg Price</th>
+                                <th>LTP</th>
+                                <th>Invested</th>
+                                <th>Current</th>
+                                <th>P&L</th>
+                                <th>Change</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdings-table">
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: var(--space-xl);">
+                                    <div class="loader">
+                                        <div class="loader-dot"></div>
+                                        <div class="loader-dot"></div>
+                                        <div class="loader-dot"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/scripts/api.js"></script>
+    <script src="/scripts/app.js"></script>
+    <script>
+        let holdings = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authStatus = await API.getAuthStatus();
+            if (!authStatus.authenticated) {
+                window.location.href = '/';
+                return;
+            }
+
+            document.getElementById('user-name').textContent = authStatus.userName || 'Demo User';
+            document.getElementById('user-initial').textContent = (authStatus.userName || 'D')[0].toUpperCase();
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                await API.logout();
+                window.location.href = '/';
+            });
+
+            await loadHoldings();
+
+            document.getElementById('sort-pnl').addEventListener('click', () => sortBy('pnl'));
+            document.getElementById('sort-value').addEventListener('click', () => sortBy('value'));
+        });
+
+        async function loadHoldings() {
+            try {
+                const summary = await API.getPortfolioSummary();
+                holdings = summary.holdings;
+
+                document.getElementById('total-holdings').textContent = summary.totalHoldings;
+                document.getElementById('profitable-holdings').textContent = summary.profitableHoldings;
+                document.getElementById('losing-holdings').textContent = summary.losingHoldings;
+
+                renderHoldingsTable(holdings, 'holdings-table');
+            } catch (error) {
+                console.error('Error loading holdings:', error);
+                showError('holdings-table', 'Failed to load holdings');
+            }
+        }
+
+        function sortBy(field) {
+            if (field === 'pnl') {
+                holdings.sort((a, b) => b.pnlPercentage - a.pnlPercentage);
+            } else if (field === 'value') {
+                holdings.sort((a, b) => b.currentValue - a.currentValue);
+            }
+            renderHoldingsTable(holdings, 'holdings-table');
+        }
+
+        function analyzeStock(symbol) {
+            window.location.href = `/analysis.html?symbol=${symbol}`;
+        }
+    </script>
+</body>
+
+</html>
