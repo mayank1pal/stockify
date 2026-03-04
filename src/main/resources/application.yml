@@ -20,6 +20,23 @@ gemini:
   model: gemini-pro
   base-url: https://generativelanguage.googleapis.com/v1beta
 
+# Anthropic Claude Configuration
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY:your-anthropic-api-key-placeholder}
+  model: claude-sonnet-4-6
+  base-url: https://api.anthropic.com/v1
+
+# Finnhub News Configuration
+finnhub:
+  api-key: ${FINNHUB_API_KEY:your-finnhub-api-key-placeholder}
+  base-url: https://finnhub.io/api/v1
+
+# Copilot Configuration
+copilot:
+  agent-timeout-seconds: 30
+  max-concurrent-agents: 6
+  cache-ttl-minutes: 15
+
 # CORS Configuration
 app:
   cors:
