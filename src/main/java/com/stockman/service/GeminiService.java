@@ -3,7 +3,6 @@ package com.stockman.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,16 +15,18 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class GeminiService implements AIModelService {
 
     private final WebClient geminiWebClient;
-
-    @Qualifier("geminiApiKey")
     private final String apiKey;
 
     @Value("${gemini.model:gemini-pro}")
     private String model;
+
+    public GeminiService(WebClient geminiWebClient, @Qualifier("geminiApiKey") String apiKey) {
+        this.geminiWebClient = geminiWebClient;
+        this.apiKey = apiKey;
+    }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

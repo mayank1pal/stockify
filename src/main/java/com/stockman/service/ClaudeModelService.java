@@ -3,7 +3,6 @@ package com.stockman.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -15,16 +14,19 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class ClaudeModelService implements AIModelService {
 
     private final WebClient anthropicWebClient;
-
-    @Qualifier("anthropicApiKey")
     private final String apiKey;
-
-    @Qualifier("anthropicModel")
     private final String model;
+
+    public ClaudeModelService(WebClient anthropicWebClient,
+                              @Qualifier("anthropicApiKey") String apiKey,
+                              @Qualifier("anthropicModel") String model) {
+        this.anthropicWebClient = anthropicWebClient;
+        this.apiKey = apiKey;
+        this.model = model;
+    }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
