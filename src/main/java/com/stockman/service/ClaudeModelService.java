@@ -32,7 +32,7 @@ public class ClaudeModelService implements AIModelService {
 
     @Override
     public String getName() {
-        return "claude";
+        return "openrouter";
     }
 
     @Override
@@ -41,17 +41,14 @@ public class ClaudeModelService implements AIModelService {
             Map<String, Object> requestBody = Map.of(
                 "model", model,
                 "max_tokens", 8192,
-                "system", systemPrompt,
                 "messages", List.of(
-                    Map.of(
-                        "role", "user",
-                        "content", userPrompt
-                    )
+                    Map.of("role", "system", "content", systemPrompt),
+                    Map.of("role", "user", "content", userPrompt)
                 )
             );
 
             String response = anthropicWebClient.post()
-                    .uri("/messages")
+                    .uri("/chat/completions")
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
@@ -60,8 +57,8 @@ public class ClaudeModelService implements AIModelService {
             return extractTextFromResponse(response);
 
         } catch (Exception e) {
-            log.error("Error calling Claude API: {}", e.getMessage());
-            return "Unable to perform analysis. Claude API error: " + e.getMessage();
+            log.error("Error calling OpenRouter API: {}", e.getMessage());
+            return "Unable to perform analysis. OpenRouter API error: " + e.getMessage();
         }
     }
 
@@ -78,15 +75,15 @@ public class ClaudeModelService implements AIModelService {
     private String extractTextFromResponse(String response) {
         try {
             JsonNode root = objectMapper.readTree(response);
-            JsonNode content = root.path("content");
-            if (content.isArray() && !content.isEmpty()) {
-                return content.get(0).path("text").asText();
+            JsonNode choices = root.path("choices");
+            if (choices.isArray() && !choices.isEmpty()) {
+                return choices.get(0).path("message").path("content").asText();
             }
-            log.warn("Unexpected Claude response format: {}", response);
-            return "Unable to parse Claude response.";
+            log.warn("Unexpected OpenRouter response format: {}", response);
+            return "Unable to parse OpenRouter response.";
         } catch (Exception e) {
-            log.error("Error parsing Claude response: {}", e.getMessage());
-            return "Unable to parse Claude response.";
+            log.error("Error parsing OpenRouter response: {}", e.getMessage());
+            return "Unable to parse OpenRouter response.";
         }
     }
 }

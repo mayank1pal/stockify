@@ -9,26 +9,26 @@ spring:
 
 # Zerodha Kite Connect Configuration
 zerodha:
-  api-key: ${ZERODHA_API_KEY:your-api-key-placeholder}
-  api-secret: ${ZERODHA_API_SECRET:your-api-secret-placeholder}
+  api-key: ${ZERODHA_API_KEY}
+  api-secret: ${ZERODHA_API_SECRET}
   redirect-url: http://localhost:8080/api/auth/callback
   login-url: https://kite.zerodha.com/connect/login
 
 # Gemini AI Configuration
 gemini:
-  api-key: ${GEMINI_API_KEY:your-gemini-api-key-placeholder}
+  api-key: ${GEMINI_API_KEY}
   model: gemini-pro
   base-url: https://generativelanguage.googleapis.com/v1beta
 
-# Anthropic Claude Configuration
-anthropic:
-  api-key: ${ANTHROPIC_API_KEY:your-anthropic-api-key-placeholder}
-  model: claude-sonnet-4-6
-  base-url: https://api.anthropic.com/v1
+# OpenRouter Configuration (cheap second model)
+openrouter:
+  api-key: ${OPENROUTER_API_KEY}
+  model: deepseek/deepseek-chat-v3-0324
+  base-url: https://openrouter.ai/api/v1
 
 # Finnhub News Configuration
 finnhub:
-  api-key: ${FINNHUB_API_KEY:your-finnhub-api-key-placeholder}
+  api-key: ${FINNHUB_API_KEY}
   base-url: https://finnhub.io/api/v1
 
 # Copilot Configuration

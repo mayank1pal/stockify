@@ -42,10 +42,10 @@ public class OrchestratorService {
             CopilotAgentType.QUANTITATIVE, "gemini",
             CopilotAgentType.SENTIMENT, "gemini",
             CopilotAgentType.GENERAL, "gemini",
-            CopilotAgentType.RISK_ASSESSOR, "claude",
+            CopilotAgentType.RISK_ASSESSOR, "openrouter",
             CopilotAgentType.PORTFOLIO_OPTIMIZER, "gemini",
-            CopilotAgentType.GEOPOLITICAL, "claude",
-            CopilotAgentType.TRADE_EXECUTOR, "claude"
+            CopilotAgentType.GEOPOLITICAL, "openrouter",
+            CopilotAgentType.TRADE_EXECUTOR, "openrouter"
     );
 
     public OrchestratorService(IntentClassifier intentClassifier,
@@ -198,7 +198,7 @@ public class OrchestratorService {
         } catch (Exception e) {
             log.error("Agent {} failed on model {}: {}", agentType, modelUsed, e.getMessage());
 
-            AIModelService fallback = modelUsed.equals("claude") ? geminiService : claudeModelService;
+            AIModelService fallback = modelUsed.equals("openrouter") ? geminiService : claudeModelService;
             if (fallback.isAvailable()) {
                 try {
                     String result = fallback.analyze(systemPrompt, userPrompt);
@@ -229,7 +229,7 @@ public class OrchestratorService {
     }
 
     private AIModelService resolveModel(String preferredModel) {
-        if ("claude".equals(preferredModel) && claudeModelService.isAvailable()) {
+        if ("openrouter".equals(preferredModel) && claudeModelService.isAvailable()) {
             return claudeModelService;
         }
         if ("gemini".equals(preferredModel) && geminiService.isAvailable()) {

@@ -108,7 +108,7 @@ public class CopilotController {
                         List.of("What's the current market sentiment?", "How is analyst coverage trending?")),
                 buildAgent(CopilotAgentType.RISK_ASSESSOR, "Risk Assessor",
                         "Risk management specialist evaluating downside scenarios and volatility",
-                        "shield", "claude",
+                        "shield", "openrouter",
                         List.of("Downside risk", "Tail risk", "Volatility regimes", "Correlation breakdown"),
                         List.of("What are the top 3 risks?", "What's the worst-case scenario?")),
                 buildAgent(CopilotAgentType.PORTFOLIO_OPTIMIZER, "Portfolio Optimizer",
@@ -118,12 +118,12 @@ public class CopilotController {
                         List.of("How should I rebalance?", "Is my portfolio diversified enough?")),
                 buildAgent(CopilotAgentType.GEOPOLITICAL, "Geopolitical Analyst",
                         "Assesses impact of wars, tariffs, and global events on your portfolio",
-                        "globe", "claude",
+                        "globe", "openrouter",
                         List.of("Trade policy", "Sanctions", "Currency impact", "Geopolitical risk"),
                         List.of("How are tariffs affecting my portfolio?", "What global risks should I watch?")),
                 buildAgent(CopilotAgentType.TRADE_EXECUTOR, "Trade Executor",
                         "Creates actionable trade plans with entry, exit, and stop-loss levels",
-                        "target", "claude",
+                        "target", "openrouter",
                         List.of("Entry/Exit points", "Stop-loss", "Position sizing", "Risk/Reward"),
                         List.of("Give me a trade plan for this stock", "Where should I set my stop-loss?")),
                 buildAgent(CopilotAgentType.GENERAL, "General Analyst",
@@ -144,7 +144,7 @@ public class CopilotController {
                 .description(description)
                 .icon(icon)
                 .preferredModel(preferredModel)
-                .fallbackModel(preferredModel.equals("claude") ? "gemini" : "claude")
+                .fallbackModel(preferredModel.equals("openrouter") ? "gemini" : "openrouter")
                 .focusAreas(focusAreas)
                 .suggestedQuestions(suggestedQuestions)
                 .build();

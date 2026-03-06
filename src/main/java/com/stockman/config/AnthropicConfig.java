@@ -8,13 +8,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Configuration
 public class AnthropicConfig {
 
-    @Value("${anthropic.api-key}")
+    @Value("${openrouter.api-key}")
     private String apiKey;
 
-    @Value("${anthropic.base-url}")
+    @Value("${openrouter.base-url}")
     private String baseUrl;
 
-    @Value("${anthropic.model}")
+    @Value("${openrouter.model}")
     private String model;
 
     @Bean
@@ -22,8 +22,7 @@ public class AnthropicConfig {
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("Content-Type", "application/json")
-                .defaultHeader("x-api-key", apiKey)
-                .defaultHeader("anthropic-version", "2023-06-01")
+                .defaultHeader("Authorization", "Bearer " + apiKey)
                 .build();
     }
 
