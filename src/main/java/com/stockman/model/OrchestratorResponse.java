@@ -24,5 +24,6 @@ public class OrchestratorResponse {
     private List<AgentDefinition.CopilotAgentType> agentsUsed;
     private List<AgentDefinition.CopilotAgentType> agentsSkipped;
     private List<String> followUpQuestions;
+    private CostMetadata costMetadata;
     private Instant timestamp;
 }

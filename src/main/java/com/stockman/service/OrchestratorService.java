@@ -19,10 +19,10 @@ import java.util.concurrent.*;
 public class OrchestratorService {
 
     private final IntentClassifier intentClassifier;
-    private final GeminiService geminiService;
-    private final ClaudeModelService claudeModelService;
+    private final OpenRouterModelService modelService;
     private final MarketDataService marketDataService;
     private final PortfolioService portfolioService;
+    private final Map<String, String> agentModelMap;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final ConcurrentHashMap<String, CachedResponse> cache = new ConcurrentHashMap<>();
@@ -36,28 +36,22 @@ public class OrchestratorService {
     @Value("${copilot.cache-ttl-minutes:15}")
     private int cacheTtlMinutes;
 
-    private static final Map<CopilotAgentType, String> MODEL_ASSIGNMENT = Map.of(
-            CopilotAgentType.FUNDAMENTAL, "gemini",
-            CopilotAgentType.TECHNICAL, "gemini",
-            CopilotAgentType.QUANTITATIVE, "gemini",
-            CopilotAgentType.SENTIMENT, "gemini",
-            CopilotAgentType.GENERAL, "gemini",
-            CopilotAgentType.RISK_ASSESSOR, "openrouter",
-            CopilotAgentType.PORTFOLIO_OPTIMIZER, "gemini",
-            CopilotAgentType.GEOPOLITICAL, "openrouter",
-            CopilotAgentType.TRADE_EXECUTOR, "openrouter"
-    );
+    @Value("${openrouter.default-model}")
+    private String defaultModel;
+
+    @Value("${openrouter.fallback-model}")
+    private String fallbackModel;
 
     public OrchestratorService(IntentClassifier intentClassifier,
-                                GeminiService geminiService,
-                                ClaudeModelService claudeModelService,
+                                OpenRouterModelService modelService,
                                 MarketDataService marketDataService,
-                                PortfolioService portfolioService) {
+                                PortfolioService portfolioService,
+                                Map<String, String> agentModelMap) {
         this.intentClassifier = intentClassifier;
-        this.geminiService = geminiService;
-        this.claudeModelService = claudeModelService;
+        this.modelService = modelService;
         this.marketDataService = marketDataService;
         this.portfolioService = portfolioService;
+        this.agentModelMap = agentModelMap;
     }
 
     public OrchestratorResponse process(CopilotRequest request, String sessionId, boolean isDemoMode) {
@@ -102,7 +96,7 @@ public class OrchestratorService {
         OrchestratorResponse response;
         if (intentClassifier.shouldSynthesize(agentsToInvoke) && successfulResults.size() >= 2) {
             response = synthesize(requestId, request.getQuery(), successfulResults,
-                    agentsToInvoke, skippedAgents);
+                    results, agentsToInvoke, skippedAgents);
         } else if (!successfulResults.isEmpty()) {
             AgentResult single = successfulResults.get(0);
             response = OrchestratorResponse.builder()
@@ -115,6 +109,7 @@ public class OrchestratorService {
                     .crossModelAgreement(true)
                     .dissentingViews(List.of())
                     .followUpQuestions(List.of())
+                    .costMetadata(buildCostMetadata(results))
                     .timestamp(Instant.now())
                     .build();
         } else {
@@ -129,6 +124,7 @@ public class OrchestratorService {
                     .dissentingViews(List.of())
                     .followUpQuestions(List.of("Try rephrasing your question",
                             "Check if API keys are configured correctly"))
+                    .costMetadata(buildCostMetadata(results))
                     .timestamp(Instant.now())
                     .build();
         }
@@ -177,84 +173,61 @@ public class OrchestratorService {
     private AgentResult runAgent(CopilotAgentType agentType, String userPrompt) {
         long start = System.currentTimeMillis();
         String systemPrompt = CopilotPrompts.getSystemPrompt(agentType);
-        String preferredModel = MODEL_ASSIGNMENT.getOrDefault(agentType, "gemini");
+        String modelId = resolveModelForAgent(agentType);
 
-        AIModelService modelService = resolveModel(preferredModel);
-        String modelUsed = modelService.getName();
+        OpenRouterModelService.AnalysisResult result = modelService.analyzeWithModel(
+                modelId, systemPrompt, userPrompt);
 
-        try {
-            String result = modelService.analyze(systemPrompt, userPrompt);
-            long duration = System.currentTimeMillis() - start;
+        long duration = System.currentTimeMillis() - start;
+        LlmUsage usage = result.usage();
+        usage.setLatencyMs(duration);
 
-            return AgentResult.builder()
-                    .agentType(agentType)
-                    .agentName(formatAgentName(agentType))
-                    .modelUsed(modelUsed)
-                    .finding(result)
-                    .confidence(0.75)
-                    .success(true)
-                    .durationMs(duration)
-                    .build();
-        } catch (Exception e) {
-            log.error("Agent {} failed on model {}: {}", agentType, modelUsed, e.getMessage());
-
-            AIModelService fallback = modelUsed.equals("openrouter") ? geminiService : claudeModelService;
-            if (fallback.isAvailable()) {
-                try {
-                    String result = fallback.analyze(systemPrompt, userPrompt);
-                    long duration = System.currentTimeMillis() - start;
-                    return AgentResult.builder()
-                            .agentType(agentType)
-                            .agentName(formatAgentName(agentType))
-                            .modelUsed(fallback.getName())
-                            .finding(result)
-                            .confidence(0.65)
-                            .success(true)
-                            .durationMs(duration)
-                            .build();
-                } catch (Exception e2) {
-                    log.error("Fallback also failed for {}: {}", agentType, e2.getMessage());
-                }
-            }
-
-            return AgentResult.builder()
-                    .agentType(agentType)
-                    .agentName(formatAgentName(agentType))
-                    .modelUsed(modelUsed)
-                    .success(false)
-                    .errorMessage(e.getMessage())
-                    .durationMs(System.currentTimeMillis() - start)
-                    .build();
-        }
+        return AgentResult.builder()
+                .agentType(agentType)
+                .agentName(formatAgentName(agentType))
+                .modelUsed(usage.getModel())
+                .finding(result.text())
+                .confidence(usage.isByok() ? 0.75 : 0.80)
+                .success(true)
+                .durationMs(duration)
+                .llmUsage(usage)
+                .build();
     }
 
-    private AIModelService resolveModel(String preferredModel) {
-        if ("openrouter".equals(preferredModel) && claudeModelService.isAvailable()) {
-            return claudeModelService;
-        }
-        if ("gemini".equals(preferredModel) && geminiService.isAvailable()) {
-            return geminiService;
-        }
-        if (claudeModelService.isAvailable()) return claudeModelService;
-        if (geminiService.isAvailable()) return geminiService;
-        return geminiService;
+    private String resolveModelForAgent(CopilotAgentType agentType) {
+        String key = agentType.name().toLowerCase().replace("_", "-");
+        return agentModelMap.getOrDefault(key, defaultModel);
     }
 
     private OrchestratorResponse synthesize(String requestId, String query,
-                                             List<AgentResult> results,
+                                             List<AgentResult> successfulResults,
+                                             List<AgentResult> allResults,
                                              List<CopilotAgentType> agentsUsed,
                                              List<CopilotAgentType> agentsSkipped) {
-        String synthesizerPrompt = CopilotPrompts.buildSynthesizerPrompt(query, results);
+        String synthesizerPrompt = CopilotPrompts.buildSynthesizerPrompt(query, successfulResults);
         String systemPrompt = CopilotPrompts.getSystemPrompt(CopilotAgentType.SYNTHESIZER);
+        String synthModelId = resolveModelForAgent(CopilotAgentType.SYNTHESIZER);
 
-        AIModelService synthModel = claudeModelService.isAvailable() ? claudeModelService : geminiService;
-        String synthesisResult = synthModel.analyze(systemPrompt, synthesizerPrompt);
+        OpenRouterModelService.AnalysisResult synthResult = modelService.analyzeWithModel(
+                synthModelId, systemPrompt, synthesizerPrompt);
 
-        return parseSynthesisResult(requestId, synthesisResult, results, agentsUsed, agentsSkipped);
+        AgentResult synthAgent = AgentResult.builder()
+                .agentType(CopilotAgentType.SYNTHESIZER)
+                .agentName("Synthesizer")
+                .modelUsed(synthResult.usage().getModel())
+                .success(true)
+                .llmUsage(synthResult.usage())
+                .build();
+        List<AgentResult> allWithSynth = new ArrayList<>(allResults);
+        allWithSynth.add(synthAgent);
+
+        return parseSynthesisResult(requestId, synthResult.text(), successfulResults,
+                allWithSynth, agentsUsed, agentsSkipped);
     }
 
     private OrchestratorResponse parseSynthesisResult(String requestId, String synthesisResult,
                                                        List<AgentResult> reasoningChain,
+                                                       List<AgentResult> allResults,
                                                        List<CopilotAgentType> agentsUsed,
                                                        List<CopilotAgentType> agentsSkipped) {
         try {
@@ -290,6 +263,7 @@ public class OrchestratorService {
                     .agentsUsed(agentsUsed)
                     .agentsSkipped(agentsSkipped)
                     .followUpQuestions(followUps)
+                    .costMetadata(buildCostMetadata(allResults))
                     .timestamp(Instant.now())
                     .build();
         } catch (Exception e) {
@@ -304,9 +278,27 @@ public class OrchestratorService {
                     .crossModelAgreement(false)
                     .dissentingViews(List.of())
                     .followUpQuestions(List.of())
+                    .costMetadata(buildCostMetadata(allResults))
                     .timestamp(Instant.now())
                     .build();
         }
+    }
+
+    private CostMetadata buildCostMetadata(List<AgentResult> results) {
+        List<LlmUsage> agentCosts = results.stream()
+                .filter(r -> r.getLlmUsage() != null)
+                .map(AgentResult::getLlmUsage)
+                .toList();
+
+        return CostMetadata.builder()
+                .totalCost(agentCosts.stream().mapToDouble(LlmUsage::getCost).sum())
+                .totalPromptTokens(agentCosts.stream().mapToInt(LlmUsage::getPromptTokens).sum())
+                .totalCompletionTokens(agentCosts.stream().mapToInt(LlmUsage::getCompletionTokens).sum())
+                .totalReasoningTokens(agentCosts.stream().mapToInt(LlmUsage::getReasoningTokens).sum())
+                .byokCallCount((int) agentCosts.stream().filter(LlmUsage::isByok).count())
+                .paidCallCount((int) agentCosts.stream().filter(u -> !u.isByok()).count())
+                .agentCosts(agentCosts)
+                .build();
     }
 
     private String buildUserPrompt(CopilotRequest request, String marketContext, String portfolioContext) {

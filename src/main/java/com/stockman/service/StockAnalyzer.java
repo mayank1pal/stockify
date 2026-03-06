@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StockAnalyzer {
 
-    private final GeminiService geminiService;
+    private final OpenRouterModelService modelService;
     private final PortfolioService portfolioService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -36,7 +36,7 @@ public class StockAnalyzer {
             case COMPREHENSIVE -> formatLongTermPrompt(holding); // Default to long-term for comprehensive
         };
 
-        String response = geminiService.analyzeWithPrompt(AnalysisPrompts.SYSTEM_ROLE, prompt);
+        String response = modelService.analyze(AnalysisPrompts.SYSTEM_ROLE, prompt);
         return parseStockInsight(response, symbol, analysisType);
     }
 
@@ -47,7 +47,7 @@ public class StockAnalyzer {
             case COMPREHENSIVE -> formatLongTermPrompt(holding);
         };
 
-        String response = geminiService.analyzeWithPrompt(AnalysisPrompts.SYSTEM_ROLE, prompt);
+        String response = modelService.analyze(AnalysisPrompts.SYSTEM_ROLE, prompt);
         return parseStockInsight(response, holding.getTradingSymbol(), analysisType);
     }
 
@@ -62,7 +62,7 @@ public class StockAnalyzer {
         String prompt = String.format(AnalysisPrompts.LONG_TERM_STRATEGY, 
                 holdingsData, riskTolerance, primaryGoal);
 
-        String response = geminiService.analyzeWithPrompt(AnalysisPrompts.SYSTEM_ROLE, prompt);
+        String response = modelService.analyze(AnalysisPrompts.SYSTEM_ROLE, prompt);
         return parseInvestmentStrategy(response, InvestmentStrategy.StrategyType.LONG_TERM_GROWTH);
     }
 
@@ -76,7 +76,7 @@ public class StockAnalyzer {
         String holdingsData = AnalysisPrompts.formatHoldingsForPrompt(summary.getHoldings());
         String prompt = String.format(AnalysisPrompts.SHORT_TERM_STRATEGY, holdingsData);
 
-        String response = geminiService.analyzeWithPrompt(AnalysisPrompts.SYSTEM_ROLE, prompt);
+        String response = modelService.analyze(AnalysisPrompts.SYSTEM_ROLE, prompt);
         return parseInvestmentStrategy(response, InvestmentStrategy.StrategyType.SHORT_TERM_TRADING);
     }
 
@@ -101,7 +101,7 @@ public class StockAnalyzer {
                 conversationContext, context, request.getPrompt());
         
         // Get AI response
-        String response = geminiService.analyzeWithPrompt(systemPrompt, fullPrompt);
+        String response = modelService.analyze(systemPrompt, fullPrompt);
         
         // Generate follow-up questions
         String[] suggestedQuestions = com.stockman.prompts.AgentPrompts.getSuggestedQuestions(request.getAgentType());
@@ -156,7 +156,7 @@ public class StockAnalyzer {
                 summary.getTotalHoldings(),
                 holdingsData);
 
-        String response = geminiService.analyzeWithPrompt(AnalysisPrompts.SYSTEM_ROLE, prompt);
+        String response = modelService.analyze(AnalysisPrompts.SYSTEM_ROLE, prompt);
         return parseInvestmentStrategy(response, InvestmentStrategy.StrategyType.BALANCED);
     }
 

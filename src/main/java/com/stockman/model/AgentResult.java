@@ -18,4 +18,5 @@ public class AgentResult {
     private boolean success;
     private String errorMessage;
     private long durationMs;
+    private LlmUsage llmUsage;
 }

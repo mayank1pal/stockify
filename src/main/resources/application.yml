@@ -14,17 +14,24 @@ zerodha:
   redirect-url: http://localhost:8080/api/auth/callback
   login-url: https://kite.zerodha.com/connect/login
 
-# Gemini AI Configuration
-gemini:
-  api-key: ${GEMINI_API_KEY}
-  model: gemini-pro
-  base-url: https://generativelanguage.googleapis.com/v1beta
-
-# OpenRouter Configuration (cheap second model)
+# OpenRouter Configuration (unified LLM gateway)
 openrouter:
   api-key: ${OPENROUTER_API_KEY}
-  model: deepseek/deepseek-chat-v3-0324
   base-url: https://openrouter.ai/api/v1
+  default-model: google/gemini-2.5-flash
+  fallback-model: google/gemini-2.5-flash
+  max-tokens: 8192
+  models:
+    fundamental: google/gemini-2.5-flash
+    technical: google/gemini-2.5-flash
+    quantitative: qwen/qwen3-235b-a22b-2507
+    sentiment: google/gemini-2.5-flash
+    general: google/gemini-2.5-flash
+    risk-assessor: qwen/qwq-32b
+    portfolio-optimizer: google/gemini-2.5-flash
+    geopolitical: qwen/qwen3-235b-a22b-2507
+    trade-executor: qwen/qwq-32b
+    synthesizer: qwen/qwen3-235b-a22b-2507
 
 # Finnhub News Configuration
 finnhub:
