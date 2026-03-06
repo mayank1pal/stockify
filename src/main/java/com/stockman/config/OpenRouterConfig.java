@@ -36,8 +36,4 @@ public class OpenRouterConfig {
                 .build();
     }
 
-    @Bean
-    public Map<String, String> agentModelMap() {
-        return models;
-    }
 }

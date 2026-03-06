@@ -1,5 +1,6 @@
 package com.stockman.controller;
 
+import com.stockman.config.OpenRouterConfig;
 import com.stockman.model.*;
 import com.stockman.model.AgentDefinition.CopilotAgentType;
 import com.stockman.service.OrchestratorService;
@@ -12,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CopilotController {
 
     private final OrchestratorService orchestratorService;
-    private final Map<String, String> agentModelMap;
+    private final OpenRouterConfig openRouterConfig;
 
     private final ConcurrentHashMap<String, OrchestratorResponse> responseHistory = new ConcurrentHashMap<>();
 
@@ -140,7 +140,7 @@ public class CopilotController {
     private AgentDefinition buildAgent(CopilotAgentType type, String name, String description,
                                         String icon, String modelKey,
                                         List<String> focusAreas, List<String> suggestedQuestions) {
-        String modelId = agentModelMap.getOrDefault(modelKey, "google/gemini-2.5-flash");
+        String modelId = openRouterConfig.getModels().getOrDefault(modelKey, "google/gemini-2.5-flash");
         return AgentDefinition.builder()
                 .type(type)
                 .name(name)

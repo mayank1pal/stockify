@@ -2,6 +2,7 @@ package com.stockman.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stockman.config.OpenRouterConfig;
 import com.stockman.model.*;
 import com.stockman.model.AgentDefinition.CopilotAgentType;
 import com.stockman.prompts.CopilotPrompts;
@@ -22,7 +23,7 @@ public class OrchestratorService {
     private final OpenRouterModelService modelService;
     private final MarketDataService marketDataService;
     private final PortfolioService portfolioService;
-    private final Map<String, String> agentModelMap;
+    private final OpenRouterConfig openRouterConfig;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final ConcurrentHashMap<String, CachedResponse> cache = new ConcurrentHashMap<>();
@@ -46,12 +47,12 @@ public class OrchestratorService {
                                 OpenRouterModelService modelService,
                                 MarketDataService marketDataService,
                                 PortfolioService portfolioService,
-                                Map<String, String> agentModelMap) {
+                                OpenRouterConfig openRouterConfig) {
         this.intentClassifier = intentClassifier;
         this.modelService = modelService;
         this.marketDataService = marketDataService;
         this.portfolioService = portfolioService;
-        this.agentModelMap = agentModelMap;
+        this.openRouterConfig = openRouterConfig;
     }
 
     public OrchestratorResponse process(CopilotRequest request, String sessionId, boolean isDemoMode) {
@@ -196,7 +197,7 @@ public class OrchestratorService {
 
     private String resolveModelForAgent(CopilotAgentType agentType) {
         String key = agentType.name().toLowerCase().replace("_", "-");
-        return agentModelMap.getOrDefault(key, defaultModel);
+        return openRouterConfig.getModels().getOrDefault(key, defaultModel);
     }
 
     private OrchestratorResponse synthesize(String requestId, String query,
