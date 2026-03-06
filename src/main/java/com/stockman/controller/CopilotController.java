@@ -12,8 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/copilot")
@@ -24,7 +26,14 @@ public class CopilotController {
     private final OrchestratorService orchestratorService;
     private final OpenRouterConfig openRouterConfig;
 
-    private final ConcurrentHashMap<String, OrchestratorResponse> responseHistory = new ConcurrentHashMap<>();
+    private static final int MAX_HISTORY = 200;
+    private final Map<String, OrchestratorResponse> responseHistory = Collections.synchronizedMap(
+            new LinkedHashMap<>(MAX_HISTORY, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, OrchestratorResponse> eldest) {
+                    return size() > MAX_HISTORY;
+                }
+            });
 
     @PostMapping("/ask")
     public ResponseEntity<OrchestratorResponse> ask(
@@ -140,14 +149,15 @@ public class CopilotController {
     private AgentDefinition buildAgent(CopilotAgentType type, String name, String description,
                                         String icon, String modelKey,
                                         List<String> focusAreas, List<String> suggestedQuestions) {
-        String modelId = openRouterConfig.getModels().getOrDefault(modelKey, "google/gemini-2.5-flash");
+        String fallback = openRouterConfig.getFallbackModel();
+        String modelId = openRouterConfig.getModels().getOrDefault(modelKey, fallback);
         return AgentDefinition.builder()
                 .type(type)
                 .name(name)
                 .description(description)
                 .icon(icon)
                 .preferredModel(modelId)
-                .fallbackModel("google/gemini-2.5-flash")
+                .fallbackModel(fallback)
                 .focusAreas(focusAreas)
                 .suggestedQuestions(suggestedQuestions)
                 .build();

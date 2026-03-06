@@ -236,13 +236,7 @@ public class StockAnalyzer {
     }
 
     private String extractJson(String response) {
-        // Find JSON in the response (it might be wrapped in markdown code blocks)
-        int start = response.indexOf("{");
-        int end = response.lastIndexOf("}");
-        if (start >= 0 && end > start) {
-            return response.substring(start, end + 1);
-        }
-        return response;
+        return OrchestratorService.extractJson(response);
     }
 
     private List<String> parseStringList(com.fasterxml.jackson.databind.JsonNode node) {

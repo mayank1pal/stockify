@@ -7,6 +7,7 @@ import com.stockman.model.*;
 import com.stockman.model.AgentDefinition.CopilotAgentType;
 import com.stockman.prompts.CopilotPrompts;
 
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -24,9 +25,11 @@ public class OrchestratorService {
     private final MarketDataService marketDataService;
     private final PortfolioService portfolioService;
     private final OpenRouterConfig openRouterConfig;
+    private final ExecutorService agentExecutor;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final ConcurrentHashMap<String, CachedResponse> cache = new ConcurrentHashMap<>();
+    private static final int MAX_CACHE_SIZE = 500;
 
     @Value("${copilot.agent-timeout-seconds:30}")
     private int agentTimeoutSeconds;
@@ -36,12 +39,6 @@ public class OrchestratorService {
 
     @Value("${copilot.cache-ttl-minutes:15}")
     private int cacheTtlMinutes;
-
-    @Value("${openrouter.default-model}")
-    private String defaultModel;
-
-    @Value("${openrouter.fallback-model}")
-    private String fallbackModel;
 
     public OrchestratorService(IntentClassifier intentClassifier,
                                 OpenRouterModelService modelService,
@@ -53,6 +50,12 @@ public class OrchestratorService {
         this.marketDataService = marketDataService;
         this.portfolioService = portfolioService;
         this.openRouterConfig = openRouterConfig;
+        this.agentExecutor = Executors.newFixedThreadPool(6);
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        agentExecutor.shutdown();
     }
 
     public OrchestratorResponse process(CopilotRequest request, String sessionId, boolean isDemoMode) {
@@ -130,17 +133,18 @@ public class OrchestratorService {
                     .build();
         }
 
+        if (cache.size() > MAX_CACHE_SIZE) {
+            cache.entrySet().removeIf(e -> e.getValue().isExpired(cacheTtlMinutes));
+        }
         cache.put(cacheKey, new CachedResponse(response, Instant.now()));
         return response;
     }
 
     private List<AgentResult> dispatchAgents(List<CopilotAgentType> agents, String userPrompt) {
-        ExecutorService executor = Executors.newFixedThreadPool(
-                Math.min(agents.size(), maxConcurrentAgents));
         List<Future<AgentResult>> futures = new ArrayList<>();
 
         for (CopilotAgentType agentType : agents) {
-            futures.add(executor.submit(() -> runAgent(agentType, userPrompt)));
+            futures.add(agentExecutor.submit(() -> runAgent(agentType, userPrompt)));
         }
 
         List<AgentResult> results = new ArrayList<>();
@@ -167,7 +171,6 @@ public class OrchestratorService {
             }
         }
 
-        executor.shutdown();
         return results;
     }
 
@@ -197,7 +200,7 @@ public class OrchestratorService {
 
     private String resolveModelForAgent(CopilotAgentType agentType) {
         String key = agentType.name().toLowerCase().replace("_", "-");
-        return openRouterConfig.getModels().getOrDefault(key, defaultModel);
+        return openRouterConfig.getModels().getOrDefault(key, openRouterConfig.getDefaultModel());
     }
 
     private OrchestratorResponse synthesize(String requestId, String query,
@@ -286,18 +289,29 @@ public class OrchestratorService {
     }
 
     private CostMetadata buildCostMetadata(List<AgentResult> results) {
-        List<LlmUsage> agentCosts = results.stream()
-                .filter(r -> r.getLlmUsage() != null)
-                .map(AgentResult::getLlmUsage)
-                .toList();
+        List<LlmUsage> agentCosts = new ArrayList<>();
+        double totalCost = 0;
+        int totalPrompt = 0, totalCompletion = 0, totalReasoning = 0, byok = 0, paid = 0;
+
+        for (AgentResult r : results) {
+            if (r.getLlmUsage() == null) continue;
+            LlmUsage u = r.getLlmUsage();
+            agentCosts.add(u);
+            totalCost += u.getCost();
+            totalPrompt += u.getPromptTokens();
+            totalCompletion += u.getCompletionTokens();
+            totalReasoning += u.getReasoningTokens();
+            if (u.isByok()) byok++;
+            else paid++;
+        }
 
         return CostMetadata.builder()
-                .totalCost(agentCosts.stream().mapToDouble(LlmUsage::getCost).sum())
-                .totalPromptTokens(agentCosts.stream().mapToInt(LlmUsage::getPromptTokens).sum())
-                .totalCompletionTokens(agentCosts.stream().mapToInt(LlmUsage::getCompletionTokens).sum())
-                .totalReasoningTokens(agentCosts.stream().mapToInt(LlmUsage::getReasoningTokens).sum())
-                .byokCallCount((int) agentCosts.stream().filter(LlmUsage::isByok).count())
-                .paidCallCount((int) agentCosts.stream().filter(u -> !u.isByok()).count())
+                .totalCost(totalCost)
+                .totalPromptTokens(totalPrompt)
+                .totalCompletionTokens(totalCompletion)
+                .totalReasoningTokens(totalReasoning)
+                .byokCallCount(byok)
+                .paidCallCount(paid)
                 .agentCosts(agentCosts)
                 .build();
     }
@@ -326,7 +340,7 @@ public class OrchestratorService {
         return sb.toString();
     }
 
-    private String extractJson(String text) {
+    static String extractJson(String text) {
         if (text.contains("```json")) {
             int start = text.indexOf("```json") + 7;
             int end = text.indexOf("```", start);

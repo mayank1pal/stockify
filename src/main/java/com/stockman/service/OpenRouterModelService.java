@@ -57,47 +57,14 @@ public class OpenRouterModelService implements AIModelService {
      */
     public AnalysisResult analyzeWithModel(String modelId, String systemPrompt, String userPrompt) {
         try {
-            Map<String, Object> requestBody = Map.of(
-                "model", modelId,
-                "max_tokens", maxTokens,
-                "messages", List.of(
-                    Map.of("role", "system", "content", systemPrompt),
-                    Map.of("role", "user", "content", userPrompt)
-                )
-            );
-
-            String response = webClient.post()
-                    .uri("/chat/completions")
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-            return parseResponse(response, modelId);
-
+            return callModel(modelId, systemPrompt, userPrompt);
         } catch (Exception e) {
             log.error("Error calling OpenRouter with model {}: {}", modelId, e.getMessage());
 
             if (!modelId.equals(fallbackModel)) {
                 log.info("Falling back to {} for failed {} call", fallbackModel, modelId);
                 try {
-                    Map<String, Object> fallbackBody = Map.of(
-                        "model", fallbackModel,
-                        "max_tokens", maxTokens,
-                        "messages", List.of(
-                            Map.of("role", "system", "content", systemPrompt),
-                            Map.of("role", "user", "content", userPrompt)
-                        )
-                    );
-
-                    String response = webClient.post()
-                            .uri("/chat/completions")
-                            .bodyValue(fallbackBody)
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .block();
-
-                    return parseResponse(response, fallbackModel);
+                    return callModel(fallbackModel, systemPrompt, userPrompt);
                 } catch (Exception e2) {
                     log.error("Fallback model {} also failed: {}", fallbackModel, e2.getMessage());
                 }
@@ -108,6 +75,26 @@ public class OpenRouterModelService implements AIModelService {
                 LlmUsage.builder().model(modelId).build()
             );
         }
+    }
+
+    private AnalysisResult callModel(String model, String systemPrompt, String userPrompt) {
+        Map<String, Object> requestBody = Map.of(
+            "model", model,
+            "max_tokens", maxTokens,
+            "messages", List.of(
+                Map.of("role", "system", "content", systemPrompt),
+                Map.of("role", "user", "content", userPrompt)
+            )
+        );
+
+        String response = webClient.post()
+                .uri("/chat/completions")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        return parseResponse(response, model);
     }
 
     private AnalysisResult parseResponse(String response, String requestedModel) {
