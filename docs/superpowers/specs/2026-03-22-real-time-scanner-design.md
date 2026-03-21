@@ -3,6 +3,7 @@
 **Date:** 2026-03-22
 **Status:** Draft
 **Scope:** v1 MVP
+**Constraint:** Single-user application. The scanner assumes one active Zerodha session at a time.
 
 ## Overview
 
@@ -30,13 +31,17 @@ Add a real-time market scanner to StockMan that generates buy/sell signals with 
 
 **Purpose:** Stream real-time tick data from Zerodha's KiteTicker WebSocket into the app.
 
+**Single-user session model:** The scanner uses the most recently authenticated Zerodha session. `ZerodhaService` exposes an `getActiveKiteConnect()` method that returns the last successfully authenticated `KiteConnect` instance. If multiple browser sessions exist, the scanner uses whichever authenticated most recently. Session changes trigger `ScanUniverseChangedEvent` to re-subscribe instruments.
+
 **Ingress Pipeline:**
 ```
-KiteTicker callback → immutable TickSnapshot → ArrayBlockingQueue(10,000) → partitioned workers
+KiteTicker callback → immutable TickSnapshot → main ArrayBlockingQueue(10,000)
+    → ticker-ingress thread dequeues → routes to per-worker ArrayBlockingQueue[4]
+    → scanner-worker threads consume their own queues (partitioned by instrumentToken % 4)
 ```
 
-- **KiteTicker callback** does minimal work: creates immutable `TickSnapshot` record, offers to bounded queue, returns immediately. Drops on overflow with metric counter.
-- **Partitioned processing** — worker threads consume from queue, route to per-instrument partition (`instrumentToken % workerCount`). Guarantees in-order processing per instrument.
+- **KiteTicker callback** does minimal work: creates immutable `TickSnapshot` record, offers to main bounded queue, returns immediately. Drops on overflow with metric counter.
+- **Two-tier queue structure** — single `ticker-ingress` thread dequeues from main queue and routes into one of 4 per-worker `ArrayBlockingQueue(2,500)` queues, partitioned by `instrumentToken % 4`. Each `scanner-worker` thread drains its own queue. This guarantees in-order processing per instrument while allowing parallel processing across instruments.
 - **Instrument mapping** — `InstrumentRegistry` downloads Zerodha instrument CSV daily (~50MB). Maintains bidirectional maps: `symbol ↔ instrumentToken`, `ISIN ↔ instrumentToken`.
 - **Tick staleness** — each `TickSnapshot` carries `receivedAt` timestamp. Consumers reject ticks older than 5 seconds. Cache entries marked stale after disconnect.
 - **Re-subscription on reconnect** — single authoritative `AtomicReference<Set<Long>>` for subscribed instruments. Reconnect callback reads and re-subscribes + sets mode.
@@ -48,12 +53,16 @@ KiteTicker callback → immutable TickSnapshot → ArrayBlockingQueue(10,000) �
 record TickSnapshot(
     long instrumentToken,
     double ltp,
-    double open, double high, double low, double close,
+    double open, double high, double low,
+    double previousClose,      // renamed: this is PREVIOUS DAY close, not candle close
     long volume,
     double bidPrice, double askPrice,
     Instant exchangeTimestamp,
     Instant receivedAt
 )
+// Note: CandleBuilder uses `ltp` for intraday candle OHLCV construction.
+// `previousClose` is the prior trading day's close (from Zerodha SDK), used for
+// day-change % calculations. Do NOT confuse with intraday candle close price.
 ```
 
 ### 1B. Session Lifecycle — AuthStateManager
@@ -62,15 +71,18 @@ record TickSnapshot(
 
 - **Pre-market validation** — at 9:00 AM, validates session token before connecting ticker. If expired, publishes `SessionExpiryEvent` → frontend shows re-auth prompt.
 - **Mid-day expiry** — detects 403/token errors, transitions to DEGRADED. Stops generating signals. Notifies user via Telegram/Discord.
-- **Reconnect with exponential backoff** — 5s → 10s → 20s → 40s → 60s max. Only reconnects if session is ACTIVE (not expired).
+- **Reconnect with exponential backoff** — 5s → 10s → 20s → 40s → 60s max. Only reconnects if session is ACTIVE (not expired). **Market hours check:** do not attempt reconnection if current time is past `scanner.disconnect-time`.
 - **Logout handling** — stops ticker gracefully, clears tick cache, cancels pending signals.
+- **Backoff config** — all backoff parameters configurable via `scanner.reconnect.*` in application.yml.
 
 ### 1C. Fundamental Data Cache — FundamentalCacheService
 
-**Sources (v1):** Finnhub API only. NSE scraping deferred to v2 (legal/reliability concerns).
+**Sources (v1):** Finnhub API (best-effort, limited Indian market coverage on free tier) + Zerodha instrument CSV (primary source for 52-week high/low, lot size, exchange, segment). NSE scraping deferred to v2.
+
+**Finnhub Indian market note:** Finnhub free tier has limited coverage for NSE stocks. Indian symbols may require `.NS` suffix and some fundamentals may be unavailable. The `FundamentalCacheService` treats Finnhub as best-effort: if data is unavailable for a symbol, fields are left null with `DataQuality.UNAVAILABLE`. The Zerodha instrument CSV is the reliable primary source for: `high52w`, `low52w`, `lotSize`, `exchange`, `segment`, `ISIN`.
 
 - **Schedule** — `@Scheduled` at 7:00 AM IST, skips weekends + holidays via `ExchangeCalendar`.
-- **Zerodha instruments** — supplement with lot size, exchange, segment from daily instrument CSV.
+- **Zerodha instruments** — primary source for 52-week data, lot size, exchange, segment from daily instrument CSV (~50MB, downloaded alongside `InstrumentRegistry` refresh).
 - **Rate limiting** — Guava `RateLimiter.create(0.8)` (48 calls/min, under Finnhub's 60 limit). Batch with 1.25s gap.
 - **Persistence** — atomic write to JSON file (write temp → rename). In-memory `ConcurrentHashMap`.
 - **Staleness** — max 7-day threshold. Per-field nullability via `Double` wrappers (not primitive). `DataQuality` enum: FRESH / STALE / PARTIAL / UNAVAILABLE.
@@ -111,7 +123,7 @@ record FundamentalData(
 |------|---------|---------|
 | `ticker-ingress` | 1 | Queue consumer, tick routing |
 | `scanner-workers` | 4 | Partitioned indicator + signal computation |
-| `alert-dispatch` | 8 (core), 16 (max) | Telegram/Discord/WebSocket dispatch |
+| `alert-dispatch` | 8 (core), 16 (max), queue=500 | Telegram/Discord/WebSocket dispatch |
 | `cache-refresh` | 1 | Daily fundamental refresh |
 | `ai-enrichment` | 2 | Async AI calls via OpenRouter |
 
@@ -232,6 +244,7 @@ record AiEnrichment(
 **Keyed by:** `symbol + style + timeframe` — a 1m scalp cooldown does NOT suppress a 15m swing signal.
 
 **States:** NEUTRAL → BUY_ACTIVE / SELL_ACTIVE → COOLDOWN → NEUTRAL
+**Direct reversal transition:** BUY_ACTIVE → SELL_ACTIVE (and vice versa) when opposite signal has strength ≥ MODERATE. Skips COOLDOWN.
 
 **Transitions:** `AtomicReference<SignalState>` per key with compare-and-swap. No lost updates.
 
@@ -249,14 +262,14 @@ record AiEnrichment(
 
 **Tiered by trading style:**
 - **Scalp/Intraday** — signal fires immediately via `SignalEvent`. AI enrichment runs async, arrives as separate `AiEnrichmentEvent`. Frontend updates in-place by signalId.
-- **Swing** — signal held for max 15 seconds. If AI responds, signal + enrichment emitted together. If timeout, signal emitted with `aiPending=true`.
+- **Swing** — signal held for max 15 seconds. If AI responds, signal + enrichment emitted together. If timeout, signal emitted as `SignalEvent` with a wrapper field `aiPending=true` (note: `aiPending` is on the `SignalEvent` envelope, not on the immutable `TradeSignal` record).
 
 **Global AI budgeter:**
 - Priority queue: STRONG signals and SWING style get priority over WEAK/SCALP.
 - Max 10 AI calls/minute via OpenRouter (Gemini 2.5 Flash BYOK, $0 cost).
 - Stale AI detection: before applying result, verify signalId still matches current state. Discard if symbol has reversed.
 
-**Agent selection:** Routes to TECHNICAL + FUNDAMENTAL agents via existing `IntentClassifier`. Prompt includes signal details + indicator snapshot + fundamental data + Finnhub news.
+**Agent selection:** New `ScannerAiService` bypasses the conversational `IntentClassifier` (which uses keyword-matching unsuitable for structured signal data). Instead, directly invokes TECHNICAL + FUNDAMENTAL agents via `OpenRouterModelService` with a purpose-built prompt template that takes `TradeSignal` + `IndicatorSnapshot` + `FundamentalData` as structured input. Does NOT go through `OrchestratorService`'s conversational pipeline.
 
 **Fallback:** If AI call fails or times out, signal shows without insight. Never blocks scalp/intraday delivery.
 
@@ -270,7 +283,7 @@ Per `signalId × channel` tracking with atomic CAS transitions:
 
 **States:** NEW → SENT (messageRef stored) → ENRICHED / FAILED / STALE
 
-- **Pending enrichment buffer** — if `AiEnrichmentEvent` arrives while state is NEW (message not yet sent), buffer in Caffeine cache (10s TTL). Retry edit once state transitions to SENT.
+- **Pending enrichment buffer** — if `AiEnrichmentEvent` arrives while state is NEW (message not yet sent), buffer in Caffeine cache (20s TTL — exceeds swing gate timeout of 15s). Retry edit once state transitions to SENT.
 - **Atomic transitions** — `AtomicReference<DeliveryState>` per key. No lost updates between send and edit threads.
 - **Persistence** — in-memory for v1 (lost on restart, acceptable). If edit fails post-restart, send fresh message instead.
 
@@ -378,6 +391,11 @@ scanner:
   candle-window-size: 600
   tick-queue-capacity: 10000
 
+  reconnect:
+    initial-delay-seconds: 5
+    max-delay-seconds: 60
+    multiplier: 2.0
+
   cooldown:
     scalp-minutes: 5
     intraday-minutes: 15
@@ -450,3 +468,79 @@ Comfortable within a 512 MB JVM heap alongside existing StockMan services.
 | Telegram/Discord API down | Independent dispatch, circuit breaker per channel |
 | Cold start (no candles/indicators) | 30-min warm-up mode, signals suppressed |
 | Clock drift affecting candle close | Event-time closing with grace period |
+
+---
+
+## 9. Additional Specifications
+
+### 9A. Demo Mode Behavior
+
+The existing demo mode (`POST /api/auth/demo`) creates a mock session without Zerodha credentials. Scanner behavior in demo mode:
+- **Scanner page accessible** — shows UI with "Demo Mode" banner
+- **No real-time ticks** — `TickerService` does not connect (no Zerodha session)
+- **Sample signals** — `DemoSignalGenerator` produces 3-5 hardcoded sample signals on page load so users can see the UI and alert format
+- **Alert channels disabled** — Telegram/Discord bots not triggered in demo mode
+- **WebSocket active** — pushes demo signals for testing the live feed
+
+### 9B. Watchlist Management
+
+**Data model:**
+```java
+record Watchlist(
+    Set<String> symbols,       // NSE symbols, e.g., "RELIANCE", "TCS"
+    Instant lastModified
+)
+```
+
+- **Persistence** — JSON file at `data/watchlist.json` (atomic write via temp + rename). Loaded into memory at startup.
+- **Validation** — max 200 symbols. Must exist in `InstrumentRegistry` (valid NSE F&O instrument). Invalid symbols rejected with 400 error.
+- **ScanUniverseChangedEvent** — `PUT /api/user/watchlist` publishes this event → `TickerService` re-subscribes to updated instrument set.
+- **Default** — user's Zerodha holdings symbols (auto-populated on login).
+
+### 9C. Graceful Shutdown
+
+`@PreDestroy` ordering on `ScannerLifecycleManager`:
+1. Stop `TickerService` — disconnect KiteTicker WebSocket
+2. Drain `ticker-ingress` queue (max 2s timeout)
+3. Shutdown `scanner-workers` pool (graceful, await 5s)
+4. Shutdown `ai-enrichment` pool (graceful, await 5s)
+5. Shutdown `alert-dispatch` pool (graceful, await 10s — allow pending Telegram/Discord sends)
+6. Disconnect Telegram bot + JDA client
+7. Stop STOMP broker
+8. Persist watchlist and fundamental cache to disk
+
+### 9D. Metrics & Observability
+
+**Framework:** Micrometer (Spring Boot Actuator, already available).
+
+**Key metrics:**
+| Metric | Type | Description |
+|--------|------|-------------|
+| `scanner.ticks.received` | Counter | Total ticks received from WebSocket |
+| `scanner.ticks.dropped` | Counter | Ticks dropped due to queue overflow |
+| `scanner.ticks.stale` | Counter | Ticks rejected as stale (>5s) |
+| `scanner.signals.generated` | Counter (tagged by style, strength) | Signals generated |
+| `scanner.signals.dropped.stale` | Counter | Signals dropped before alert dispatch |
+| `scanner.alerts.sent` | Counter (tagged by channel) | Alerts successfully sent |
+| `scanner.alerts.failed` | Counter (tagged by channel, error_level) | Alert failures |
+| `scanner.alerts.dropped` | Counter | Alerts dropped by executor rejection |
+| `scanner.ai.calls` | Counter | AI enrichment calls made |
+| `scanner.ai.timeouts` | Counter | AI enrichment timeouts |
+| `scanner.queue.size` | Gauge | Current main tick queue depth |
+
+**Threshold alerting:** If `scanner.ticks.dropped` rate exceeds 10/sec for 30s, log WARN. Exposed via `/api/scanner/status`.
+
+### 9E. Security for Admin Endpoints
+
+**Current state:** StockMan has no Spring Security or role-based access. For v1:
+- Admin endpoints (`/api/admin/**`) protected by a simple API key header (`X-Admin-Key`) validated against `admin.api-key` config property.
+- Secrets (bot tokens) never returned in GET responses — masked as `***`.
+- All PUT operations to admin endpoints audit-logged (log level INFO with timestamp, endpoint, changed fields).
+- **Future:** Migrate to Spring Security with role-based access when multi-user support is added.
+
+### 9F. WebSocket CORS Configuration
+
+WebSocket endpoints require separate CORS config from REST endpoints:
+- `WebSocketMessageBrokerConfigurer.registerStompEndpoints()` uses `setAllowedOriginPatterns()` matching the same origins as `app.cors.allowed-origins`.
+- This is a separate code path from the existing `WebConfig` CORS setup on `/api/**`.
+- SockJS fallback endpoints inherit the same origin restrictions.
