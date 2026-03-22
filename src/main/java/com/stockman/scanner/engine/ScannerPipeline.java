@@ -10,7 +10,7 @@ import com.stockman.scanner.model.SignalEnums.TradingStyle;
 import com.stockman.scanner.model.TickSnapshot;
 import com.stockman.scanner.model.TradeSignal;
 import com.stockman.scanner.service.InstrumentRegistry;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -43,7 +43,6 @@ import java.util.Optional;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ScannerPipeline {
 
     private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
@@ -61,6 +60,26 @@ public class ScannerPipeline {
     private final ApplicationEventPublisher eventPublisher;
     private final ScannerConfig config;
     private final InstrumentRegistry instrumentRegistry;
+    private final MeterRegistry meterRegistry;
+    // Metrics counter is looked up per-tag at publish time; no pre-created Counter field.
+
+    public ScannerPipeline(CandleBuilder candleBuilder,
+                           IndicatorEngine indicatorEngine,
+                           SignalDetector signalDetector,
+                           SignalCooldownManager cooldownManager,
+                           ApplicationEventPublisher eventPublisher,
+                           ScannerConfig config,
+                           InstrumentRegistry instrumentRegistry,
+                           MeterRegistry meterRegistry) {
+        this.candleBuilder = candleBuilder;
+        this.indicatorEngine = indicatorEngine;
+        this.signalDetector = signalDetector;
+        this.cooldownManager = cooldownManager;
+        this.eventPublisher = eventPublisher;
+        this.config = config;
+        this.instrumentRegistry = instrumentRegistry;
+        this.meterRegistry = meterRegistry;
+    }
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -183,6 +202,11 @@ public class ScannerPipeline {
         boolean aiEnabled = config.getAiEnrichment().isEnabled();
         SignalEvent event = new SignalEvent(this, signal, aiEnabled);
         eventPublisher.publishEvent(event);
+
+        // Increment counter tagged by style and strength
+        meterRegistry.counter("scanner.signals.generated",
+                "style", style.name().toLowerCase(),
+                "strength", strength.name().toLowerCase()).increment();
 
         log.info("Published SignalEvent: {} {} {} aiPending={}", type, symbol, timeframe, aiEnabled);
     }

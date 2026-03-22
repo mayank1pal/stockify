@@ -8,6 +8,8 @@ import com.stockman.service.ZerodhaService;
 import com.zerodhatech.kiteconnect.KiteConnect;
 import com.zerodhatech.models.Tick;
 import com.zerodhatech.ticker.KiteTicker;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -75,6 +77,11 @@ public class TickerService {
     /** Monotonically-increasing count of ticks dropped due to main-queue overflow. */
     private final AtomicLong droppedTicks = new AtomicLong(0);
 
+    // ── Metrics ───────────────────────────────────────────────────────────────
+    private final Counter ticksReceived;
+    private final Counter ticksDropped;
+    private final Counter ticksStale;
+
     // ── Constructor ──────────────────────────────────────────────────────────
 
     public TickerService(ScannerConfig config,
@@ -83,7 +90,8 @@ public class TickerService {
                          ScannerPipeline pipeline,
                          AuthStateManager authStateManager,
                          ExchangeCalendar exchangeCalendar,
-                         InstrumentRegistry instrumentRegistry) {
+                         InstrumentRegistry instrumentRegistry,
+                         MeterRegistry meterRegistry) {
         this.config = config;
         this.zerodhaConfig = zerodhaConfig;
         this.zerodhaService = zerodhaService;
@@ -98,6 +106,14 @@ public class TickerService {
             // Per-worker queues each get 1/NUM_WORKERS of total capacity (min 1,000)
             workerQueues[i] = new ArrayBlockingQueue<>(Math.max(capacity / NUM_WORKERS, 1000));
         }
+
+        // Register metrics
+        this.ticksReceived = meterRegistry.counter("scanner.ticks.received");
+        this.ticksDropped  = meterRegistry.counter("scanner.ticks.dropped");
+        this.ticksStale    = meterRegistry.counter("scanner.ticks.stale");
+
+        // Gauge: live main-queue size
+        meterRegistry.gauge("scanner.queue.size", mainQueue, java.util.Collection::size);
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -269,7 +285,16 @@ public class TickerService {
 
         for (Tick tick : ticks) {
             TickSnapshot snapshot = convertTick(tick);
+            ticksReceived.increment();
+
+            // Stale check: treat ticks older than 5 seconds as stale
+            long ageMs = java.time.Duration.between(snapshot.exchangeTimestamp(), Instant.now()).toMillis();
+            if (ageMs > 5_000) {
+                ticksStale.increment();
+            }
+
             if (!mainQueue.offer(snapshot)) {
+                ticksDropped.increment();
                 long dropped = droppedTicks.incrementAndGet();
                 if (dropped % 1000 == 1) {
                     log.warn("Main tick queue full — dropped {} ticks so far (latest: token={})",

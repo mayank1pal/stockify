@@ -9,6 +9,8 @@ import com.stockman.scanner.model.IndicatorSnapshot;
 import com.stockman.scanner.model.TradeSignal;
 import com.stockman.service.OpenRouterModelService;
 import com.stockman.service.OpenRouterModelService.AnalysisResult;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
@@ -38,17 +40,22 @@ public class ScannerAiService {
     private final AiBudgeter budgeter;
     private final ScannerConfig config;
     private final ApplicationEventPublisher eventPublisher;
+    private final Counter aiCalls;
+    private final Counter aiTimeouts;
 
     public ScannerAiService(OpenRouterModelService modelService,
                             OpenRouterConfig openRouterConfig,
                             AiBudgeter budgeter,
                             ScannerConfig config,
-                            ApplicationEventPublisher eventPublisher) {
+                            ApplicationEventPublisher eventPublisher,
+                            MeterRegistry meterRegistry) {
         this.modelService = modelService;
         this.openRouterConfig = openRouterConfig;
         this.budgeter = budgeter;
         this.config = config;
         this.eventPublisher = eventPublisher;
+        this.aiCalls    = meterRegistry.counter("scanner.ai.calls");
+        this.aiTimeouts = meterRegistry.counter("scanner.ai.timeouts");
     }
 
     /**
@@ -74,6 +81,7 @@ public class ScannerAiService {
         }
 
         try {
+            aiCalls.increment();
             String systemPrompt = buildSystemPrompt();
             String userPrompt = buildUserPrompt(signal, indicators, fundamentals);
 
@@ -98,7 +106,13 @@ public class ScannerAiService {
                             : "unknown");
 
         } catch (Exception e) {
-            log.warn("AI enrichment failed for {}: {}", signal.signalId(), e.getMessage());
+            // Count timeouts separately from other failures
+            if (isTimeout(e)) {
+                aiTimeouts.increment();
+                log.warn("AI enrichment timed out for {}: {}", signal.signalId(), e.getMessage());
+            } else {
+                log.warn("AI enrichment failed for {}: {}", signal.signalId(), e.getMessage());
+            }
         }
     }
 
@@ -170,5 +184,13 @@ public class ScannerAiService {
 
     private static String fmt(double value) {
         return String.format("%.2f", value);
+    }
+
+    /** Returns {@code true} if the exception looks like a network/read timeout. */
+    private static boolean isTimeout(Exception e) {
+        String msg = e.getMessage();
+        if (msg == null) return false;
+        String lower = msg.toLowerCase();
+        return lower.contains("timeout") || lower.contains("timed out") || lower.contains("read timed");
     }
 }

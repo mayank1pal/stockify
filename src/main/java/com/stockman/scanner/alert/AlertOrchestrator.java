@@ -6,6 +6,8 @@ import com.stockman.scanner.event.SignalEvent;
 import com.stockman.scanner.model.AiEnrichment;
 import com.stockman.scanner.model.SignalEnums.DeliveryStatus;
 import com.stockman.scanner.model.TradeSignal;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -35,6 +37,10 @@ public class AlertOrchestrator {
     private final AlertDeliveryState deliveryState;
     private final SignalHistoryBuffer historyBuffer;
     private final AlertConfig alertConfig;
+    private final MeterRegistry meterRegistry;
+
+    // Cached counters for the non-tagged "dropped" case
+    private final Counter alertsDropped;
 
     // Use @Autowired(required = false) so Telegram/Discord beans are absent when disabled.
     public AlertOrchestrator(
@@ -43,13 +49,16 @@ public class AlertOrchestrator {
             WebSocketAlertChannel webSocket,
             AlertDeliveryState deliveryState,
             SignalHistoryBuffer historyBuffer,
-            AlertConfig alertConfig) {
+            AlertConfig alertConfig,
+            MeterRegistry meterRegistry) {
         this.telegram = Optional.ofNullable(telegram);
         this.discord = Optional.ofNullable(discord);
         this.webSocket = webSocket;
         this.deliveryState = deliveryState;
         this.historyBuffer = historyBuffer;
         this.alertConfig = alertConfig;
+        this.meterRegistry = meterRegistry;
+        this.alertsDropped = meterRegistry.counter("scanner.alerts.dropped");
     }
 
     // ── Signal handling ────────────────────────────────────────────────────────
@@ -61,6 +70,7 @@ public class AlertOrchestrator {
 
         if (isStale(signal)) {
             log.debug("Dropping stale signal: {}", signal.signalId());
+            alertsDropped.increment();
             return;
         }
 
@@ -68,6 +78,7 @@ public class AlertOrchestrator {
 
         // WebSocket is always dispatched first (non-optional).
         webSocket.sendSignal(signal, event.isAiPending());
+        meterRegistry.counter("scanner.alerts.sent", "channel", "websocket").increment();
 
         // Telegram: fire-and-forget; check for a buffered enrichment after send.
         telegram.ifPresent(t -> {
@@ -77,6 +88,7 @@ public class AlertOrchestrator {
 
                 String msgId = t.sendSignal(signal);
                 deliveryState.transitionToSent(signal.signalId(), "telegram", msgId);
+                meterRegistry.counter("scanner.alerts.sent", "channel", "telegram").increment();
 
                 // If enrichment already arrived while we were sending, apply it immediately.
                 AiEnrichment pending = deliveryState.getPendingEnrichment(signal.signalId());
@@ -86,6 +98,7 @@ public class AlertOrchestrator {
                 }
             } catch (Exception e) {
                 log.warn("Telegram alert failed for {}: {}", signal.signalId(), e.getMessage());
+                meterRegistry.counter("scanner.alerts.failed", "channel", "telegram").increment();
             }
         });
 
@@ -97,6 +110,7 @@ public class AlertOrchestrator {
                 String msgId = d.sendSignal(signal);
                 if (msgId != null) {
                     deliveryState.transitionToSent(signal.signalId(), "discord", msgId);
+                    meterRegistry.counter("scanner.alerts.sent", "channel", "discord").increment();
 
                     AiEnrichment pending = deliveryState.getPendingEnrichment(signal.signalId());
                     if (pending != null) {
@@ -109,6 +123,7 @@ public class AlertOrchestrator {
                 }
             } catch (Exception e) {
                 log.warn("Discord alert failed for {}: {}", signal.signalId(), e.getMessage());
+                meterRegistry.counter("scanner.alerts.failed", "channel", "discord").increment();
             }
         });
     }

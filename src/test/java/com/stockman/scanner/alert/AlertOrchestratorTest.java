@@ -9,6 +9,7 @@ import com.stockman.scanner.model.SignalEnums.SignalStrength;
 import com.stockman.scanner.model.SignalEnums.SignalType;
 import com.stockman.scanner.model.SignalEnums.TradingStyle;
 import com.stockman.scanner.model.TradeSignal;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,7 +70,8 @@ class AlertOrchestratorTest {
                 webSocketChannel,
                 deliveryState,
                 historyBuffer,
-                alertConfig
+                alertConfig,
+                new SimpleMeterRegistry()
         );
     }
 
@@ -383,7 +385,8 @@ class AlertOrchestratorTest {
     @Test
     void onSignal_noOptionalChannels_webSocketStillReceivesSignal() {
         AlertOrchestrator wsOnly = new AlertOrchestrator(
-                null, null, webSocketChannel, deliveryState, historyBuffer, alertConfig);
+                null, null, webSocketChannel, deliveryState, historyBuffer, alertConfig,
+                new SimpleMeterRegistry());
         TradeSignal signal = freshSignal(TradingStyle.SWING);
 
         wsOnly.onSignal(signalEvent(signal));
@@ -394,7 +397,8 @@ class AlertOrchestratorTest {
     @Test
     void onEnrichment_noOptionalChannels_webSocketStillReceivesEnrichment() {
         AlertOrchestrator wsOnly = new AlertOrchestrator(
-                null, null, webSocketChannel, deliveryState, historyBuffer, alertConfig);
+                null, null, webSocketChannel, deliveryState, historyBuffer, alertConfig,
+                new SimpleMeterRegistry());
         AiEnrichment enrichment = enrichmentFor("ANY:SIGNAL:ID");
 
         wsOnly.onEnrichment(enrichmentEvent(enrichment));

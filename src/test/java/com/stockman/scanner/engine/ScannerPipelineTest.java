@@ -8,6 +8,7 @@ import com.stockman.scanner.model.SignalEnums.*;
 import com.stockman.scanner.model.TickSnapshot;
 import com.stockman.scanner.model.TradeSignal;
 import com.stockman.scanner.service.InstrumentRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,7 +78,8 @@ class ScannerPipelineTest {
 
         pipeline = new ScannerPipeline(
                 candleBuilder, indicatorEngine, signalDetector,
-                cooldownManager, eventPublisher, config, instrumentRegistry
+                cooldownManager, eventPublisher, config, instrumentRegistry,
+                new SimpleMeterRegistry()
         );
     }
 

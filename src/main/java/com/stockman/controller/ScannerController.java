@@ -8,6 +8,9 @@ import com.stockman.scanner.model.TradeSignal;
 import com.stockman.scanner.service.AuthStateManager;
 import com.stockman.scanner.service.InstrumentRegistry;
 import com.stockman.scanner.service.TickerService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.search.Search;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +36,7 @@ public class ScannerController {
     private final InstrumentRegistry instrumentRegistry;
     private final TickerService tickerService;
     private final AuthStateManager authStateManager;
+    private final MeterRegistry meterRegistry;
 
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getStatus() {
@@ -54,6 +58,9 @@ public class ScannerController {
         // Last tick time from most recent signal as a proxy (null if no signals)
         Optional<TradeSignal> latest = allSignals.stream().findFirst();
         status.put("lastTickTime", latest.map(s -> s.generatedAt().toString()).orElse(null));
+
+        // Key metrics from MeterRegistry
+        status.put("metrics", collectKeyMetrics());
 
         log.debug("Scanner status requested: authState={} instruments={}",
                 authStateManager.getState(), instrumentRegistry.size());
@@ -105,6 +112,35 @@ public class ScannerController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(snap);
+    }
+
+    // ── Metrics helpers ────────────────────────────────────────────────────────
+
+    private Map<String, Object> collectKeyMetrics() {
+        Map<String, Object> m = new HashMap<>();
+        m.put("ticksReceived",  getCounterValue("scanner.ticks.received"));
+        m.put("ticksDropped",   getCounterValue("scanner.ticks.dropped"));
+        m.put("ticksStale",     getCounterValue("scanner.ticks.stale"));
+        m.put("queueSize",      getGaugeValue("scanner.queue.size"));
+        m.put("signalsGenerated", getCounterValue("scanner.signals.generated"));
+        m.put("alertsSent",     getCounterValue("scanner.alerts.sent"));
+        m.put("alertsFailed",   getCounterValue("scanner.alerts.failed"));
+        m.put("alertsDropped",  getCounterValue("scanner.alerts.dropped"));
+        m.put("aiCalls",        getCounterValue("scanner.ai.calls"));
+        m.put("aiTimeouts",     getCounterValue("scanner.ai.timeouts"));
+        return m;
+    }
+
+    /** Sums all counters with the given name across all tag combinations. */
+    private double getCounterValue(String name) {
+        return Search.in(meterRegistry).name(name).counters()
+                .stream().mapToDouble(Counter::count).sum();
+    }
+
+    private double getGaugeValue(String name) {
+        io.micrometer.core.instrument.Gauge gauge =
+                meterRegistry.find(name).gauge();
+        return gauge == null ? 0.0 : gauge.value();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
