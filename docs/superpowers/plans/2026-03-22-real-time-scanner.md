@@ -19,7 +19,9 @@
 **Config:**
 - `src/main/java/com/stockman/config/ScannerConfig.java` — `@ConfigurationProperties(prefix = "scanner")` for all scanner settings
 - `src/main/java/com/stockman/config/AlertConfig.java` — `@ConfigurationProperties(prefix = "alerts")` for Telegram/Discord/WebSocket
-- `src/main/java/com/stockman/config/WebSocketConfig.java` — STOMP/SockJS broker configuration + security
+- `src/main/java/com/stockman/config/AdminConfig.java` — `@ConfigurationProperties(prefix = "admin")` for admin API key
+- `src/main/java/com/stockman/config/AsyncConfig.java` — `@EnableAsync`, `@EnableScheduling`, named executor beans
+- `src/main/java/com/stockman/config/WebSocketBrokerConfig.java` — STOMP/SockJS broker configuration + security (renamed from WebSocketConfig to avoid collision with AlertConfig inner class)
 
 **Scanner core:**
 - `src/main/java/com/stockman/scanner/model/TickSnapshot.java` — immutable tick record
@@ -32,7 +34,8 @@
 - `src/main/java/com/stockman/scanner/model/Watchlist.java` — watchlist model
 
 **Data layer services:**
-- `src/main/java/com/stockman/scanner/service/InstrumentRegistry.java` — symbol ↔ instrumentToken mapping
+- `src/main/java/com/stockman/scanner/service/InstrumentRegistry.java` — symbol ↔ instrumentToken mapping + Zerodha CSV download
+- `src/main/java/com/stockman/scanner/service/WatchlistService.java` — watchlist persistence (data/watchlist.json), validation, load/save
 - `src/main/java/com/stockman/scanner/service/TickerService.java` — KiteTicker WebSocket wrapper + ingress pipeline
 - `src/main/java/com/stockman/scanner/service/AuthStateManager.java` — session lifecycle state machine
 - `src/main/java/com/stockman/scanner/service/FundamentalCacheService.java` — daily fundamental refresh
@@ -284,7 +287,18 @@ import java.util.Map;
 public class AlertConfig {
     private TelegramConfig telegram = new TelegramConfig();
     private DiscordConfig discord = new DiscordConfig();
-    private WebSocketConfig websocket = new WebSocketConfig();
+    private WebSocketAlertConfig websocket = new WebSocketAlertConfig();
+
+    // Cross-field validation: if enabled, token must not be blank
+    @jakarta.annotation.PostConstruct
+    public void validate() {
+        if (telegram.isEnabled() && (telegram.getBotToken() == null || telegram.getBotToken().isBlank())) {
+            throw new IllegalStateException("alerts.telegram.enabled=true but bot-token is blank");
+        }
+        if (discord.isEnabled() && (discord.getBotToken() == null || discord.getBotToken().isBlank())) {
+            throw new IllegalStateException("alerts.discord.enabled=true but bot-token is blank");
+        }
+    }
 
     @Getter @Setter
     public static class TelegramConfig {
@@ -297,11 +311,11 @@ public class AlertConfig {
     public static class DiscordConfig {
         private boolean enabled = false;
         private String botToken = "";
-        private Map<String, String> channelIds = Map.of();
+        private Map<String, String> channelIds = new java.util.HashMap<>(); // mutable for property binding
     }
 
     @Getter @Setter
-    public static class WebSocketConfig {
+    public static class WebSocketAlertConfig { // renamed to avoid collision with WebSocketBrokerConfig
         private boolean enabled = true;
     }
 }
@@ -317,6 +331,75 @@ Expected: BUILD SUCCESS
 ```bash
 git add pom.xml src/main/resources/application.yml src/main/java/com/stockman/config/ScannerConfig.java src/main/java/com/stockman/config/AlertConfig.java
 git commit -m "feat(scanner): add dependencies and configuration classes"
+```
+
+- [ ] **Step 7: Create AdminConfig.java**
+
+```java
+package com.stockman.config;
+
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration(proxyBeanMethods = false)
+@ConfigurationProperties(prefix = "admin")
+@Getter @Setter
+public class AdminConfig {
+    private String credential = "change-me-in-production";
+}
+```
+
+- [ ] **Step 8: Create AsyncConfig.java with executor beans**
+
+```java
+package com.stockman.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+
+@Configuration
+@EnableAsync
+@EnableScheduling
+public class AsyncConfig {
+
+    @Bean("alertExecutor")
+    public Executor alertExecutor() {
+        ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+        exec.setCorePoolSize(8);
+        exec.setMaxPoolSize(16);
+        exec.setQueueCapacity(500);
+        exec.setThreadNamePrefix("alert-");
+        exec.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        exec.initialize();
+        return exec;
+    }
+
+    @Bean("aiEnrichmentExecutor")
+    public Executor aiEnrichmentExecutor() {
+        ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+        exec.setCorePoolSize(2);
+        exec.setMaxPoolSize(4);
+        exec.setQueueCapacity(50);
+        exec.setThreadNamePrefix("ai-enrich-");
+        exec.initialize();
+        return exec;
+    }
+}
+```
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/main/java/com/stockman/config/AdminConfig.java src/main/java/com/stockman/config/AsyncConfig.java
+git commit -m "feat(scanner): add AdminConfig and AsyncConfig with executor beans"
 ```
 
 ---
@@ -641,8 +724,14 @@ public class ExchangeCalendar {
     private static final ZoneId IST = ZoneId.of("Asia/Kolkata");
 
     private final Set<LocalDate> holidays = new HashSet<>();
+    private final Set<LocalDate> specialSessionDates = new HashSet<>();
 
-    public ExchangeCalendar(String holidayCalendarPath) {
+    public ExchangeCalendar(ScannerConfig scannerConfig) {
+        loadHolidays(scannerConfig.getHolidayCalendar());
+    }
+
+    // Constructor for tests (no Spring DI)
+    ExchangeCalendar(String holidayCalendarPath) {
         loadHolidays(holidayCalendarPath);
     }
 
@@ -653,13 +742,22 @@ public class ExchangeCalendar {
             root.get("holidays").forEach(node ->
                 holidays.add(LocalDate.parse(node.asText()))
             );
-            log.info("Loaded {} holidays from {}", holidays.size(), path);
+            // Load special sessions (e.g., Muhurat trading) — these override holidays
+            if (root.has("specialSessions")) {
+                root.get("specialSessions").forEach(node ->
+                    specialSessionDates.add(LocalDate.parse(node.get("date").asText()))
+                );
+            }
+            log.info("Loaded {} holidays, {} special sessions from {}",
+                holidays.size(), specialSessionDates.size(), path);
         } catch (Exception e) {
             log.warn("Failed to load holiday calendar from {}: {}", path, e.getMessage());
         }
     }
 
     public boolean isTradingDay(LocalDate date) {
+        // Special sessions (e.g., Muhurat) override holiday status
+        if (specialSessionDates.contains(date)) return true;
         DayOfWeek dow = date.getDayOfWeek();
         if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) return false;
         return !holidays.contains(date);
@@ -748,11 +846,12 @@ class InstrumentRegistryTest {
 Run: `./mvnw test -Dtest=InstrumentRegistryTest`
 Expected: FAIL
 
-- [ ] **Step 3: Implement InstrumentRegistry**
+- [ ] **Step 3: Implement InstrumentRegistry with CSV download**
 
 ```java
 package com.stockman.scanner.service;
 
+import com.stockman.service.ZerodhaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -768,6 +867,8 @@ public class InstrumentRegistry {
     private final Map<String, String> symbolToIsin = new ConcurrentHashMap<>();
     private final Map<String, String> symbolToExchange = new ConcurrentHashMap<>();
     private final Map<String, Integer> symbolToLotSize = new ConcurrentHashMap<>();
+    private final Map<String, Double> symbolToHigh52w = new ConcurrentHashMap<>();
+    private final Map<String, Double> symbolToLow52w = new ConcurrentHashMap<>();
 
     public void register(String symbol, long token, String isin, String exchange, int lotSize) {
         symbolToToken.put(symbol, token);
@@ -777,20 +878,48 @@ public class InstrumentRegistry {
         symbolToLotSize.put(symbol, lotSize);
     }
 
+    /**
+     * Load instruments from Zerodha's instrument CSV.
+     * Call this at startup and daily before market open.
+     * Uses KiteConnect.getInstruments("NSE") which returns the full instrument list.
+     */
+    public void loadFromZerodha(ZerodhaService zerodhaService) {
+        try {
+            var kite = zerodhaService.getActiveKiteConnect();
+            if (kite == null) {
+                log.warn("No active Kite session — skipping instrument download");
+                return;
+            }
+            clear();
+            // KiteConnect.getInstruments() returns List<Instrument> with:
+            // instrumentToken, tradingsymbol, isin, exchange, lotSize, etc.
+            var instruments = kite.getInstruments("NSE");
+            for (var inst : instruments) {
+                register(inst.tradingsymbol, inst.instrument_token,
+                        inst.isin != null ? inst.isin : "",
+                        inst.exchange, inst.lot_size > 0 ? inst.lot_size : 1);
+            }
+            log.info("Loaded {} NSE instruments from Zerodha", size());
+        } catch (Exception e) {
+            log.error("Failed to load instruments from Zerodha: {}", e.getMessage());
+        }
+    }
+
     public Long getToken(String symbol) { return symbolToToken.get(symbol); }
     public String getSymbol(long token) { return tokenToSymbol.get(token); }
     public String getIsin(String symbol) { return symbolToIsin.get(symbol); }
     public String getExchange(String symbol) { return symbolToExchange.get(symbol); }
     public Integer getLotSize(String symbol) { return symbolToLotSize.getOrDefault(symbol, 1); }
+    public Double getHigh52w(String symbol) { return symbolToHigh52w.get(symbol); }
+    public Double getLow52w(String symbol) { return symbolToLow52w.get(symbol); }
     public Set<Long> getAllTokens() { return Set.copyOf(tokenToSymbol.keySet()); }
+    public boolean hasSymbol(String symbol) { return symbolToToken.containsKey(symbol); }
     public int size() { return symbolToToken.size(); }
 
     public void clear() {
-        symbolToToken.clear();
-        tokenToSymbol.clear();
-        symbolToIsin.clear();
-        symbolToExchange.clear();
-        symbolToLotSize.clear();
+        symbolToToken.clear(); tokenToSymbol.clear(); symbolToIsin.clear();
+        symbolToExchange.clear(); symbolToLotSize.clear();
+        symbolToHigh52w.clear(); symbolToLow52w.clear();
     }
 }
 ```
@@ -903,16 +1032,21 @@ public class ScanUniverseChangedEvent extends ApplicationEvent {
 Read the current `ZerodhaService.java` to find the session map, then add:
 
 ```java
-// Add to ZerodhaService.java - new method after existing session management methods
+// Add field to ZerodhaService.java (after existing kiteConnections field):
+private volatile KiteConnect lastAuthenticated;
+
+// In the authenticate/generateSession method, after:
+//   kiteConnections.put(sessionId, kiteConnect);
+// Add:
+//   this.lastAuthenticated = kiteConnect;
+
+// Add new public method:
 public KiteConnect getActiveKiteConnect() {
-    // Return the most recently authenticated session
-    return kiteConnectMap.values().stream()
-        .findFirst()
-        .orElse(null);
+    return lastAuthenticated;
 }
 ```
 
-Note: Read the actual field name in ZerodhaService (likely `kiteConnectMap` or similar `ConcurrentHashMap<String, KiteConnect>`) and use the correct field name.
+Note: The field name for sessions is `kiteConnections` (`ConcurrentHashMap<String, KiteConnect>`). The `volatile` field ensures the scanner always gets the most recently authenticated session regardless of ConcurrentHashMap iteration order.
 
 - [ ] **Step 3: Verify build compiles**
 
@@ -1516,24 +1650,39 @@ git commit -m "feat(scanner): add DiscordAlertChannel with embeds"
 
 **Files:**
 - Create: `src/main/java/com/stockman/scanner/alert/WebSocketAlertChannel.java`
-- Create: `src/main/java/com/stockman/config/WebSocketConfig.java`
+- Create: `src/main/java/com/stockman/config/WebSocketBrokerConfig.java`
 
-- [ ] **Step 1: Implement WebSocketConfig**
+- [ ] **Step 1: Implement WebSocketBrokerConfig**
 
 ```java
 package com.stockman.config;
 
-import com.stockman.config.AlertConfig;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.web.socket.config.annotation.*;
+
+import java.util.Set;
 
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
-public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+public class WebSocketBrokerConfig implements WebSocketMessageBrokerConfigurer {
+    private static final Set<String> ALLOWED_DESTINATIONS = Set.of(
+        "/topic/signals", "/topic/ai-enrichment", "/topic/scanner-status"
+    );
+
     private final AlertConfig alertConfig;
+
+    @Value("${app.cors.allowed-origins:http://localhost:8080}")
+    private String allowedOrigins;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -1545,14 +1694,34 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         if (alertConfig.getWebsocket().isEnabled()) {
             registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:*")
-                .withSockJS();
+                .setAllowedOriginPatterns(allowedOrigins.split(","))
+                .withSockJS()
+                .setStreamBytesLimit(0); // disable iframe transport
         }
+    }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(new ChannelInterceptor() {
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+                StompCommand command = accessor.getCommand();
+                // Deny all client SEND — server-push only
+                if (command == StompCommand.SEND) return null;
+                // Validate SUBSCRIBE destinations
+                if (command == StompCommand.SUBSCRIBE) {
+                    String dest = accessor.getDestination();
+                    if (dest == null || !ALLOWED_DESTINATIONS.contains(dest)) return null;
+                }
+                return message;
+            }
+        });
     }
 }
 ```
 
-Add `ChannelInterceptor` to deny client SEND, validate SUBSCRIBE destinations, validate session on CONNECT.
+Note: Uses `app.cors.allowed-origins` from existing WebConfig — matches spec 9F requirement for shared CORS origins.
 
 - [ ] **Step 2: Implement WebSocketAlertChannel**
 
@@ -1566,7 +1735,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/main/java/com/stockman/scanner/alert/WebSocketAlertChannel.java src/main/java/com/stockman/config/WebSocketConfig.java
+git add src/main/java/com/stockman/scanner/alert/WebSocketAlertChannel.java src/main/java/com/stockman/config/WebSocketBrokerConfig.java
 git commit -m "feat(scanner): add WebSocket alert channel with STOMP/SockJS"
 ```
 
@@ -1693,7 +1862,116 @@ git commit -m "feat(scanner): add scanner.html with live WebSocket signal feed"
 
 ---
 
-### Task 21: Demo Mode & Final Integration
+### Task 21: WatchlistService (Persistence)
+
+**Files:**
+- Create: `src/main/java/com/stockman/scanner/service/WatchlistService.java`
+- Test: `src/test/java/com/stockman/scanner/service/WatchlistServiceTest.java`
+
+- [ ] **Step 1: Write failing tests**
+
+Test: load from JSON file, save with atomic write, max-200 symbol validation, symbol must exist in InstrumentRegistry, default population from holdings, merge holdings + custom watchlist into scan universe.
+
+- [ ] **Step 2: Implement WatchlistService**
+
+```java
+package com.stockman.scanner.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stockman.scanner.model.Watchlist;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.Instant;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Slf4j
+@Service
+public class WatchlistService {
+    private static final String WATCHLIST_FILE = "data/watchlist.json";
+    private static final int MAX_SYMBOLS = 200;
+
+    private final InstrumentRegistry instrumentRegistry;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private volatile Watchlist current = new Watchlist(Set.of(), Instant.now());
+
+    public WatchlistService(InstrumentRegistry instrumentRegistry) {
+        this.instrumentRegistry = instrumentRegistry;
+        loadFromDisk();
+    }
+
+    public Watchlist get() { return current; }
+
+    public Watchlist update(Set<String> symbols) {
+        if (symbols.size() > MAX_SYMBOLS) {
+            throw new IllegalArgumentException("Max " + MAX_SYMBOLS + " symbols allowed");
+        }
+        // Validate all symbols exist in registry
+        for (String s : symbols) {
+            if (!instrumentRegistry.hasSymbol(s)) {
+                throw new IllegalArgumentException("Unknown symbol: " + s);
+            }
+        }
+        current = new Watchlist(Set.copyOf(symbols), Instant.now());
+        saveToDisk();
+        return current;
+    }
+
+    public Set<Long> getScanTokens() {
+        Set<Long> tokens = new HashSet<>();
+        for (String symbol : current.symbols()) {
+            Long token = instrumentRegistry.getToken(symbol);
+            if (token != null) tokens.add(token);
+        }
+        return tokens;
+    }
+
+    private void loadFromDisk() {
+        File file = new File(WATCHLIST_FILE);
+        if (!file.exists()) return;
+        try {
+            current = objectMapper.readValue(file, Watchlist.class);
+            log.info("Loaded watchlist with {} symbols", current.symbols().size());
+        } catch (IOException e) {
+            log.warn("Failed to load watchlist: {}", e.getMessage());
+        }
+    }
+
+    private void saveToDisk() {
+        try {
+            Path target = Path.of(WATCHLIST_FILE);
+            Files.createDirectories(target.getParent());
+            Path temp = Files.createTempFile(target.getParent(), "watchlist", ".tmp");
+            objectMapper.writeValue(temp.toFile(), current);
+            Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.error("Failed to save watchlist: {}", e.getMessage());
+        }
+    }
+}
+```
+
+- [ ] **Step 3: Run tests**
+
+Run: `./mvnw test -Dtest=WatchlistServiceTest`
+Expected: PASS
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/main/java/com/stockman/scanner/service/WatchlistService.java src/test/java/com/stockman/scanner/service/WatchlistServiceTest.java
+git commit -m "feat(scanner): add WatchlistService with JSON persistence"
+```
+
+---
+
+### Task 22: Demo Mode & Final Integration
 
 **Files:**
 - Create: `src/main/java/com/stockman/scanner/service/DemoSignalGenerator.java`
@@ -1701,11 +1979,13 @@ git commit -m "feat(scanner): add scanner.html with live WebSocket signal feed"
 
 - [ ] **Step 1: Implement DemoSignalGenerator**
 
-Generates 3-5 hardcoded sample `TradeSignal` objects when demo mode is active. Publishes them as `SignalEvent` via the control-plane. Provides realistic-looking data for UI testing without Zerodha connection.
+Generates 3-5 hardcoded sample `TradeSignal` objects. Publishes them as `SignalEvent` via the control-plane. Provides realistic-looking data for UI testing without Zerodha connection.
 
 - [ ] **Step 2: Integrate demo mode into ScannerLifecycleManager**
 
-On startup: if demo mode active (no Zerodha session), start `DemoSignalGenerator` instead of `TickerService`. WebSocket still active for demo signal push.
+Demo mode detection: check `ZerodhaService.getActiveKiteConnect() == null` (no authenticated session). This is application-level, not per-HTTP-session. When `getActiveKiteConnect()` returns null, the scanner starts in demo mode with `DemoSignalGenerator`. When a user later authenticates (via `/api/auth/callback`), the lifecycle manager detects the session change and transitions from demo → live scanning.
+
+**Important:** Do NOT check `session.getAttribute("demoMode")` — that's per-HTTP-session and not accessible from a singleton component. Instead, listen for authentication events or poll `getActiveKiteConnect()`.
 
 - [ ] **Step 3: Run full test suite**
 
@@ -1714,7 +1994,7 @@ Expected: All tests PASS
 
 - [ ] **Step 4: Manual integration test**
 
-1. Start app in demo mode: `./mvnw spring-boot:run`
+1. Start app: `./mvnw spring-boot:run`
 2. Open `http://localhost:8080` → login with demo → navigate to scanner page
 3. Verify: sample signals appear, WebSocket connected, filter controls work
 4. Verify: status endpoint returns expected data at `GET /api/scanner/status`
@@ -1728,6 +2008,43 @@ git commit -m "feat(scanner): add demo mode signal generator and final integrati
 
 ---
 
+### Task 23: Metrics Instrumentation
+
+**Files:**
+- Modify: `src/main/java/com/stockman/scanner/service/TickerService.java`
+- Modify: `src/main/java/com/stockman/scanner/engine/ScannerPipeline.java`
+- Modify: `src/main/java/com/stockman/scanner/alert/AlertOrchestrator.java`
+- Modify: `src/main/java/com/stockman/controller/ScannerController.java`
+
+- [ ] **Step 1: Add Micrometer counters/gauges to TickerService**
+
+Inject `MeterRegistry`. Add counters: `scanner.ticks.received`, `scanner.ticks.dropped`, `scanner.ticks.stale`. Add gauge: `scanner.queue.size` (main tick queue depth).
+
+- [ ] **Step 2: Add metrics to ScannerPipeline**
+
+Counter: `scanner.signals.generated` (tagged by style, strength).
+
+- [ ] **Step 3: Add metrics to AlertOrchestrator**
+
+Counters: `scanner.alerts.sent` (tagged by channel), `scanner.alerts.failed` (tagged by channel, error_level), `scanner.alerts.dropped`, `scanner.signals.dropped.stale`.
+
+- [ ] **Step 4: Add metrics to ScannerAiService**
+
+Counters: `scanner.ai.calls`, `scanner.ai.timeouts`.
+
+- [ ] **Step 5: Expose key metrics in /api/scanner/status**
+
+Update `ScannerController.getStatus()` to include tick rate, signal count today, alert success/failure counts, queue depth from Micrometer.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add -A
+git commit -m "feat(scanner): add Micrometer metrics instrumentation"
+```
+
+---
+
 ## Summary
 
 | Phase | Tasks | Key Deliverable |
@@ -1736,8 +2053,18 @@ git commit -m "feat(scanner): add demo mode signal generator and final integrati
 | 2. Signal Engine | 6-10 | Candle builder, indicators, signal detection, AI enrichment |
 | 3. Data Layer Services | 11-13 | TickerService, FundamentalCache, lifecycle manager |
 | 4. Alert Service | 14-18 | Telegram, Discord, WebSocket, orchestrator |
-| 5. REST API & Frontend | 19-21 | Controllers, scanner.html, demo mode |
+| 5. REST API & Frontend | 19-23 | Controllers, scanner.html, watchlist, demo mode, metrics |
 
-**Total: 21 tasks, ~65 steps**
-**Estimated new files: ~35**
-**Estimated test files: ~10**
+**Note on Task 13 (ScannerLifecycleManager):** This task should be implemented with placeholder references for alert channels (Tasks 14-18) and finalized in Task 22 after all channels exist. The compile check in Task 13 may need conditional imports or interface references.
+
+**Note on scanner.js WebSocket client:** Task 20 Step 3 must include STOMP.js and SockJS browser client libraries. Add via CDN in scanner.html:
+```html
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+```
+
+**Note on WebSocketBrokerConfig CORS:** Task 17 must read `app.cors.allowed-origins` from config (same source as `WebConfig`) and pass to `setAllowedOriginPatterns()` instead of hardcoding localhost.
+
+**Total: 23 tasks, ~80 steps**
+**Estimated new files: ~40**
+**Estimated test files: ~12**
