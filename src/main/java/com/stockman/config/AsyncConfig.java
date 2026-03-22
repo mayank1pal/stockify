@@ -33,6 +33,7 @@ public class AsyncConfig {
         exec.setMaxPoolSize(4);
         exec.setQueueCapacity(50);
         exec.setThreadNamePrefix("ai-enrich-");
+        exec.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         exec.initialize();
         return exec;
     }
