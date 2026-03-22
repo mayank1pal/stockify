@@ -56,3 +56,44 @@ logging:
   level:
     com.stockman: DEBUG
     org.springframework.web: INFO
+
+scanner:
+  enabled: true
+  connect-time: "09:00"
+  disconnect-time: "15:35"
+  silence-period-end: "09:16:30"
+  warmup-minutes: 30
+  holiday-calendar: classpath:holidays.json
+  candle-window-size: 600
+  tick-queue-capacity: 10000
+  reconnect:
+    initial-delay-seconds: 5
+    max-delay-seconds: 60
+    multiplier: 2.0
+  cooldown:
+    scalp-minutes: 5
+    intraday-minutes: 15
+    swing-minutes: 60
+  ai-enrichment:
+    enabled: true
+    max-calls-per-minute: 10
+    timeout-seconds: 15
+    swing-gate-timeout-seconds: 15
+
+alerts:
+  telegram:
+    enabled: false
+    bot-token: ${TELEGRAM_BOT_TOKEN:}
+    chat-id: ${TELEGRAM_CHAT_ID:}
+  discord:
+    enabled: false
+    bot-token: ${DISCORD_BOT_TOKEN:}
+    channel-ids:
+      scalp: ${DISCORD_SCALP_CHANNEL:}
+      intraday: ${DISCORD_INTRADAY_CHANNEL:}
+      swing: ${DISCORD_SWING_CHANNEL:}
+  websocket:
+    enabled: true
+
+admin:
+  credential: ${ADMIN_API_KEY:changeme}
