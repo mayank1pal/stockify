@@ -1,7 +1,7 @@
 package com.stockman.controller;
 
 import com.stockman.scanner.event.ScanUniverseChangedEvent;
-import com.stockman.scanner.service.InstrumentRegistry;
+import com.stockman.scanner.service.WatchlistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -11,16 +11,15 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * REST endpoints for user watchlist and alert preferences.
  *
- * <p>Uses an in-memory watchlist store as a temporary placeholder until
- * Task 21 (WatchlistService) is implemented.
+ * <p>Delegates persistence and validation to {@link WatchlistService}.
  */
 @RestController
 @RequestMapping("/api/user")
@@ -28,27 +27,18 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class UserPreferenceController {
 
-    private static final int MAX_WATCHLIST_SIZE = 200;
-
     private final ApplicationEventPublisher eventPublisher;
-    private final InstrumentRegistry instrumentRegistry;
-
-    /**
-     * Temporary in-memory watchlist. Task 21 will replace this with WatchlistService.
-     * Static so state persists across request-scoped bean recreation.
-     */
-    private static final Set<String> watchlistSymbols =
-            Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final WatchlistService watchlistService;
 
     @GetMapping("/watchlist")
     public ResponseEntity<Map<String, Object>> getWatchlist() {
-        List<String> symbols = new ArrayList<>(watchlistSymbols);
+        List<String> symbols = new ArrayList<>(watchlistService.get());
         Collections.sort(symbols);
 
         Map<String, Object> body = Map.of(
                 "symbols", symbols,
                 "count", symbols.size(),
-                "maxSize", MAX_WATCHLIST_SIZE
+                "maxSize", WatchlistService.MAX_SYMBOLS
         );
         return ResponseEntity.ok(body);
     }
@@ -64,58 +54,41 @@ public class UserPreferenceController {
         @SuppressWarnings("unchecked")
         List<Object> symbolsList = (List<Object>) symbolsRaw;
 
-        if (symbolsList.size() > MAX_WATCHLIST_SIZE) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Watchlist cannot exceed " + MAX_WATCHLIST_SIZE + " symbols"));
-        }
-
-        // Validate and collect symbols
-        List<String> validated = new ArrayList<>(symbolsList.size());
-        List<String> unknown = new ArrayList<>();
+        // Collect and normalise input
+        Set<String> requested = new HashSet<>(symbolsList.size());
         for (Object raw : symbolsList) {
-            if (!(raw instanceof String symbol)) {
+            if (!(raw instanceof String s)) {
                 return ResponseEntity.badRequest()
                         .body(Map.of("error", "All entries in 'symbols' must be strings"));
             }
-            String upper = symbol.trim().toUpperCase();
-            if (upper.isBlank()) continue;
-            if (!instrumentRegistry.hasSymbol(upper)) {
-                unknown.add(upper);
-            } else {
-                validated.add(upper);
+            String upper = s.trim().toUpperCase();
+            if (!upper.isBlank()) {
+                requested.add(upper);
             }
         }
 
-        if (!unknown.isEmpty()) {
+        // Delegate to WatchlistService for validation and persistence
+        Set<String> updated;
+        try {
+            updated = watchlistService.update(requested);
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
-                    .body(Map.of(
-                            "error", "Unknown symbols not found in instrument registry",
-                            "unknownSymbols", unknown
-                    ));
+                    .body(Map.of("error", e.getMessage()));
         }
-
-        // Compute token set for the new universe
-        Set<Long> tokens = ConcurrentHashMap.newKeySet(validated.size());
-        for (String sym : validated) {
-            Long token = instrumentRegistry.getToken(sym);
-            if (token != null) {
-                tokens.add(token);
-            }
-        }
-
-        // Update in-memory store
-        watchlistSymbols.clear();
-        watchlistSymbols.addAll(validated);
 
         // Notify scanner of the updated universe
+        Set<Long> tokens = watchlistService.getScanTokens();
         eventPublisher.publishEvent(new ScanUniverseChangedEvent(this, tokens));
 
         log.info("Watchlist updated: {} symbols, {} instrument tokens published",
-                validated.size(), tokens.size());
+                updated.size(), tokens.size());
+
+        List<String> sortedSymbols = new ArrayList<>(updated);
+        Collections.sort(sortedSymbols);
 
         return ResponseEntity.ok(Map.of(
-                "symbols", new ArrayList<>(watchlistSymbols),
-                "count", watchlistSymbols.size(),
+                "symbols", sortedSymbols,
+                "count", updated.size(),
                 "updatedAt", Instant.now().toString()
         ));
     }
