@@ -124,6 +124,38 @@ const API = {
     async copilotGetReasoning(requestId) {
         const response = await fetch(`${this.baseUrl}/api/copilot/reasoning/${requestId}`);
         return response.json();
+    },
+
+    // Scanner endpoints
+    async getScannerStatus() {
+        const response = await fetch(`${this.baseUrl}/api/scanner/status`);
+        return response.json();
+    },
+
+    async getScannerSignals(cursor, limit = 50) {
+        const params = new URLSearchParams({ limit });
+        if (cursor) params.set('cursor', cursor);
+        const response = await fetch(`${this.baseUrl}/api/scanner/signals?${params}`);
+        return response.json();
+    },
+
+    async getScannerIndicators(symbol) {
+        const response = await fetch(`${this.baseUrl}/api/scanner/indicators/${symbol}`);
+        return response.json();
+    },
+
+    async getWatchlist() {
+        const response = await fetch(`${this.baseUrl}/api/user/watchlist`);
+        return response.json();
+    },
+
+    async updateWatchlist(symbols) {
+        const response = await fetch(`${this.baseUrl}/api/user/watchlist`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbols })
+        });
+        return response.json();
     }
 };
 
