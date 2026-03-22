@@ -2,10 +2,12 @@ package com.stockman.scanner;
 
 import com.stockman.config.ScannerConfig;
 import com.stockman.scanner.service.AuthStateManager;
+import com.stockman.scanner.service.DemoSignalGenerator;
 import com.stockman.scanner.service.ExchangeCalendar;
 import com.stockman.scanner.service.FundamentalCacheService;
 import com.stockman.scanner.service.InstrumentRegistry;
 import com.stockman.scanner.service.TickerService;
+import com.stockman.scanner.service.WatchlistService;
 import com.stockman.service.ZerodhaService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -25,8 +27,9 @@ import java.util.concurrent.CompletableFuture;
  * fundamental-data refresh, and — if today is a trading day — connects the WebSocket
  * ticker. On shutdown: disconnects the ticker and persists the fundamental cache to disk.
  *
- * <p>Alert channels (Tasks 14–18) are intentionally absent here; they will be wired in
- * Task 22 (Demo Mode &amp; Final Integration).
+ * <p><b>Demo mode</b>: when no Zerodha session is present,
+ * {@link DemoSignalGenerator#generateDemoSignals()} is called instead so the UI has
+ * realistic sample data without a live feed.
  */
 @Component
 @Slf4j
@@ -40,6 +43,8 @@ public class ScannerLifecycleManager {
     private final TickerService tickerService;
     private final AuthStateManager authStateManager;
     private final FundamentalCacheService fundamentalCacheService;
+    private final WatchlistService watchlistService;
+    private final DemoSignalGenerator demoSignalGenerator;
 
     @PostConstruct
     public void onStartup() {
@@ -50,9 +55,10 @@ public class ScannerLifecycleManager {
 
         log.info("Scanner starting up...");
 
-        // 1. Validate Zerodha session
+        // 1. Validate Zerodha session; fall back to demo mode if absent
         if (!authStateManager.validateSession(zerodhaService)) {
-            log.info("No active Zerodha session — scanner in standby mode");
+            log.info("No active Zerodha session — entering demo mode");
+            demoSignalGenerator.generateDemoSignals();
             return;
         }
 
@@ -80,6 +86,15 @@ public class ScannerLifecycleManager {
 
         // 5. Subscribe to all registered instruments (holdings + watchlist consolidated)
         Set<Long> tokens = instrumentRegistry.getAllTokens();
+
+        // Merge watchlist tokens if any have been persisted
+        Set<Long> watchlistTokens = watchlistService.getScanTokens();
+        if (!watchlistTokens.isEmpty()) {
+            tokens = new java.util.HashSet<>(tokens);
+            tokens.addAll(watchlistTokens);
+            log.info("Merged {} watchlist tokens into scan universe", watchlistTokens.size());
+        }
+
         tickerService.start(tokens);
         log.info("Scanner started — subscribed to {} instruments", tokens.size());
     }
