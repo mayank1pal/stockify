@@ -207,7 +207,7 @@ public class FundamentalCacheService {
         }
     }
 
-    void persistToDisk() {
+    public void persistToDisk() {
         try {
             Path targetPath = Paths.get(cacheFilePath);
             Path dir = targetPath.getParent() != null ? targetPath.getParent() : Paths.get(".");
