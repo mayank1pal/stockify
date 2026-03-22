@@ -111,6 +111,14 @@ public class ZerodhaService {
         }
     }
 
+    /**
+     * Returns any active KiteConnect instance (first found), or null if no sessions exist.
+     * Used by InstrumentRegistry and TickerService for background operations.
+     */
+    public KiteConnect getActiveKiteConnect() {
+        return kiteConnections.values().stream().findFirst().orElse(null);
+    }
+
     public void logout(String sessionId) {
         KiteConnect kite = kiteConnections.remove(sessionId);
         sessions.remove(sessionId);
