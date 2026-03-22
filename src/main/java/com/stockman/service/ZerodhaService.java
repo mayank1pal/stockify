@@ -24,6 +24,8 @@ public class ZerodhaService {
     private final ZerodhaConfig zerodhaConfig;
     private final ConcurrentHashMap<String, KiteConnect> kiteConnections = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, AuthSession> sessions = new ConcurrentHashMap<>();
+    /** Always points to the most recently authenticated KiteConnect instance. */
+    private volatile KiteConnect lastAuthenticated;
 
     public ZerodhaService(ZerodhaConfig zerodhaConfig) {
         this.zerodhaConfig = zerodhaConfig;
@@ -54,6 +56,7 @@ public class ZerodhaService {
             
             kiteConnections.put(sessionId, kiteConnect);
             sessions.put(sessionId, session);
+            lastAuthenticated = kiteConnect;
             
             log.info("Successfully authenticated user: {}", user.userId);
             return session;
@@ -112,11 +115,13 @@ public class ZerodhaService {
     }
 
     /**
-     * Returns any active KiteConnect instance (first found), or null if no sessions exist.
+     * Returns the most recently authenticated KiteConnect instance, or null if no session exists.
+     * The volatile field ensures the scanner always sees the latest authentication without
+     * the non-deterministic ordering of ConcurrentHashMap.values().stream().findFirst().
      * Used by InstrumentRegistry and TickerService for background operations.
      */
     public KiteConnect getActiveKiteConnect() {
-        return kiteConnections.values().stream().findFirst().orElse(null);
+        return lastAuthenticated;
     }
 
     public void logout(String sessionId) {
