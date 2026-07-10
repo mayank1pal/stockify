@@ -1,98 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="StockMan - AI-Powered Stock Research & Portfolio Analysis">
-    <title>StockMan - Smart Stock Research</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/main.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockMan — Login</title>
+  <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-card animate-in">
-            <div class="login-logo">
-                <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#3b82f6"/>
-                            <stop offset="100%" style="stop-color:#8b5cf6"/>
-                        </linearGradient>
-                    </defs>
-                    <rect width="80" height="80" rx="16" fill="url(#logoGradient)"/>
-                    <path d="M20 50 L30 35 L40 42 L50 28 L60 38" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                    <circle cx="60" cy="38" r="4" fill="white"/>
-                    <path d="M20 55 L35 55 L35 60 L20 60 Z" fill="rgba(255,255,255,0.5)"/>
-                    <path d="M40 50 L55 50 L55 60 L40 60 Z" fill="rgba(255,255,255,0.5)"/>
-                </svg>
-            </div>
-            <h1 class="login-title">StockMan</h1>
-            <p class="login-subtitle">AI-Powered Stock Research & Portfolio Analysis for Smart Investors</p>
-            
-            <div class="login-buttons">
-                <button id="zerodha-login" class="btn btn-primary" style="width: 100%;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                        <polyline points="10 17 15 12 10 7"/>
-                        <line x1="15" y1="12" x2="3" y2="12"/>
-                    </svg>
-                    Login with Zerodha
-                </button>
-                <button id="demo-login" class="btn btn-secondary" style="width: 100%;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polygon points="10 8 16 12 10 16 10 8"/>
-                    </svg>
-                    Try Demo Mode
-                </button>
-            </div>
-            
-            <p style="margin-top: var(--space-xl); font-size: 0.75rem; color: var(--text-muted);">
-                By continuing, you agree to our Terms of Service and Privacy Policy.<br>
-                Demo mode uses sample data for demonstration purposes.
-            </p>
-        </div>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-brand">
+        <span class="brand-mark">S</span>
+        <h1>StockMan</h1>
+      </div>
+      <p class="login-subtitle">AI-Powered Investment Intelligence</p>
+
+      <div class="login-actions">
+        <button class="btn btn-primary btn-lg" id="loginBtn" onclick="loginWithZerodha()">Connect with Zerodha</button>
+        <div class="login-divider">or</div>
+        <button class="btn btn-secondary btn-lg" id="demoBtn" onclick="startDemo()">Try Demo Mode</button>
+      </div>
+
+      <p class="text-muted" style="margin-top: 32px; font-size: 0.82rem;">Built with AI agents for smarter investing</p>
     </div>
+  </div>
 
-    <script src="/scripts/api.js"></script>
-    <script>
-        document.getElementById('zerodha-login').addEventListener('click', async () => {
-            try {
-                const response = await fetch('/api/auth/login');
-                const data = await response.json();
-                window.location.href = data.loginUrl;
-            } catch (error) {
-                console.error('Login error:', error);
-                alert('Failed to initiate login. Please try again.');
-            }
-        });
+  <script src="scripts/api.js"></script>
+  <script>
+    // Check if already authenticated - redirect to dashboard
+    async function checkAuth() {
+      try {
+        const status = await API.getAuthStatus();
+        if (status.authenticated) {
+          window.location.href = '/dashboard.html';
+        }
+      } catch (e) {
+        // Not authenticated, stay on login
+      }
+    }
 
-        document.getElementById('demo-login').addEventListener('click', async () => {
-            try {
-                const response = await fetch('/api/auth/demo', { method: 'POST' });
-                if (response.ok) {
-                    window.location.href = '/dashboard.html';
-                }
-            } catch (error) {
-                console.error('Demo login error:', error);
-                alert('Failed to start demo mode. Please try again.');
-            }
-        });
+    async function loginWithZerodha() {
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.textContent = 'Connecting...';
+      try {
+        const response = await API.login();
+        if (response.loginUrl) {
+          window.location.href = response.loginUrl;
+        }
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Connect with Zerodha';
+        alert('Failed to connect. Please try again.');
+      }
+    }
 
-        // Check if already authenticated
-        (async () => {
-            try {
-                const response = await fetch('/api/auth/status');
-                const data = await response.json();
-                if (data.authenticated) {
-                    window.location.href = '/dashboard.html';
-                }
-            } catch (error) {
-                console.log('Not authenticated');
-            }
-        })();
-    </script>
+    async function startDemo() {
+      const btn = document.getElementById('demoBtn');
+      btn.disabled = true;
+      btn.textContent = 'Starting...';
+      try {
+        await API.enableDemoMode();
+        window.location.href = '/dashboard.html';
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Try Demo Mode';
+        alert('Failed to start demo. Please try again.');
+      }
+    }
+
+    checkAuth();
+  </script>
 </body>
 </html>
