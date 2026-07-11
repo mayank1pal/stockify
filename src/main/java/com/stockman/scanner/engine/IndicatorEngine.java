@@ -3,6 +3,7 @@ package com.stockman.scanner.engine;
 import com.stockman.scanner.model.Candle;
 import com.stockman.scanner.model.IndicatorSnapshot;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -36,6 +37,7 @@ import java.util.Map;
  * </ul>
  */
 @Slf4j
+@Component
 public class IndicatorEngine {
 
     // SuperTrend configuration

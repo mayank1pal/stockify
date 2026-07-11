@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stockman.config.ScannerConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ public class ExchangeCalendar {
     private final Set<LocalDate> holidays = new HashSet<>();
     private final Set<LocalDate> specialSessionDates = new HashSet<>();
 
+    @Autowired
     public ExchangeCalendar(ScannerConfig scannerConfig) {
         loadHolidays(scannerConfig.getHolidayCalendar());
     }

@@ -3,6 +3,7 @@ package com.stockman.scanner.engine;
 import com.stockman.config.ScannerConfig;
 import com.stockman.scanner.model.SignalEnums.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * </ul>
  */
 @Slf4j
+@Component
 public class SignalCooldownManager {
 
     // ── Internal state ────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import com.stockman.scanner.model.IndicatorSnapshot;
 import com.stockman.scanner.model.SignalEnums.*;
 import com.stockman.scanner.model.TradeSignal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import java.util.Optional;
  * {@code current} snapshot against the {@code previous} snapshot.
  */
 @Slf4j
+@Component
 public class SignalDetector {
 
     /**

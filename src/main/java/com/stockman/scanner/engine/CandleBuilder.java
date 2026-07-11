@@ -3,6 +3,8 @@ package com.stockman.scanner.engine;
 import com.stockman.scanner.model.Candle;
 import com.stockman.scanner.model.TickSnapshot;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -34,6 +36,7 @@ import java.util.Map;
  * </ul>
  */
 @Slf4j
+@Component
 public class CandleBuilder {
 
     private final int windowSize;
@@ -49,7 +52,7 @@ public class CandleBuilder {
     /**
      * @param windowSize maximum number of completed candles kept per (instrument, timeframe).
      */
-    public CandleBuilder(int windowSize) {
+    public CandleBuilder(@Value("${scanner.candle-window-size}") int windowSize) {
         this.windowSize = windowSize;
     }
 
