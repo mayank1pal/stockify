@@ -1,388 +1,362 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Stock Analysis - StockMan</title>
-    <link rel="stylesheet" href="styles/main.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockMan — AI Analysis</title>
+  <link rel="stylesheet" href="styles/main.css">
 </head>
-
 <body>
-    <div class="app-container">
-        <!-- Navigation Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-logo">
-                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#3b82f6" />
-                            <stop offset="100%" style="stop-color:#8b5cf6" />
-                        </linearGradient>
-                    </defs>
-                    <rect width="40" height="40" rx="8" fill="url(#logoGrad)" />
-                    <path d="M10 25 L15 17 L20 21 L25 14 L30 19" stroke="white" stroke-width="2" stroke-linecap="round"
-                        fill="none" />
-                </svg>
-                <h1>StockMan</h1>
-            </div>
+  <nav class="navbar">
+    <a href="/" class="navbar-brand"><span class="brand-mark">S</span> StockMan</a>
+    <ul class="navbar-nav" id="navMenu">
+      <li><a href="dashboard.html"><span class="nav-icon">◎</span> Dashboard</a></li>
+      <li><a href="holdings.html"><span class="nav-icon">▤</span> Holdings</a></li>
+      <li><a href="analysis.html" class="active"><span class="nav-icon">◈</span> Analysis</a></li>
+      <li><a href="copilot.html"><span class="nav-icon">⬡</span> Copilot</a></li>
+      <li><a href="strategy.html"><span class="nav-icon">◆</span> Strategy</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="navbar-user"><span id="userName"></span><div class="avatar" id="userAvatar"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+    </div>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+  </nav>
 
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="dashboard.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                        Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="holdings.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        </svg>
-                        Holdings
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="analysis.html" class="nav-link active">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
-                        </svg>
-                        AI Analysis
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="copilot.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1v3a7 7 0 0 0 14 0v-3h1a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3z" />
-                            <circle cx="9" cy="13" r="1" />
-                            <circle cx="15" cy="13" r="1" />
-                        </svg>
-                        Copilot
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="strategy.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20V10" />
-                            <path d="M18 20V4" />
-                            <path d="M6 20v-4" />
-                        </svg>
-                        Strategy
-                    </a>
-                </li>
-            </ul>
-
-            <div style="margin-top: auto; padding-top: var(--space-lg); border-top: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                    <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center;">
-                        <span class="user-avatar-text" style="font-weight: 700; color: white;">D</span>
-                    </div>
-                    <div>
-                        <div class="user-name" style="font-weight: 600; font-size: 0.875rem;">Demo User</div>
-                        <div style="color: var(--text-muted); font-size: 0.75rem;">demo@stockman.app</div>
-                    </div>
-                </div>
-                <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="API.logout()">Logout</button>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="page-header">
-                <div>
-                    <h1>AI Stock Analysis</h1>
-                    <p class="text-muted">Ask AI agents about your portfolio stocks</p>
-                </div>
-            </div>
-
-            <!-- Agent Selector -->
-            <div class="card" id="agentSelector">
-                <h2>Select AI Agent</h2>
-                <div class="agent-grid" id="agentGrid">
-                    <!-- Agents will be loaded here -->
-                </div>
-            </div>
-
-            <!-- Stock Selector & Analysis Interface -->
-            <div class="card">
-                <div class="analysis-controls">
-                    <div class="form-group">
-                        <label>Stock (Optional)</label>
-                        <select id="stockSelect" class="form-control">
-                            <option value="">General Question (No specific stock)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Conversation History -->
-                <div class="conversation-container" id="conversationContainer">
-                    <div class="conversation-empty" id="emptyState">
-                        <div class="empty-icon">💬</div>
-                        <h3>Start a Conversation</h3>
-                        <p>Select an AI agent above and ask your question below</p>
-                    </div>
-                    <div class="conversation-messages" id="messages"></div>
-                </div>
-
-                <!-- Input Area -->
-                <div class="input-area">
-                    <div class="input-wrapper">
-                        <textarea id="promptInput" class="prompt-input"
-                            placeholder="Ask your question... (e.g., 'Should I buy this stock?', 'What are the key risks?')"
-                            rows="3"></textarea>
-                        <div class="input-actions">
-                            <button class="btn btn-sm btn-outline" onclick="clearConversation()">Clear</button>
-                            <button class="btn btn-sm btn-primary" onclick="sendQuestion()" id="sendBtn">
-                                <span>Send</span>
-                                <span class="btn-icon">→</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Suggested Questions -->
-                <div class="suggested-questions" id="suggestedQuestions" style="display: none;">
-                    <div class="suggested-label">Suggested questions:</div>
-                    <div class="question-chips" id="questionChips"></div>
-                </div>
-            </div>
-        </main>
+  <div class="main-content">
+    <div class="page-header animate-in">
+      <h1>AI Analysis</h1>
+      <p class="subtitle">Converse with specialized analyst agents</p>
     </div>
 
-    <script src="scripts/api.js"></script>
-    <script>
-        let selectedAgent = null;
-        let conversationHistory = [];
-        let agents = [];
-        let holdings = [];
+    <div class="agent-grid mb-lg animate-in animate-in-delay-1" id="agentGrid"></div>
 
-        // Load on page init
-        async function init() {
-            await API.getAuthStatus();
-            await loadAgents();
-            await loadHoldings();
+    <div class="flex items-center gap-md mb-lg animate-in animate-in-delay-2">
+      <div class="form-group" style="min-width: 220px;">
+        <label class="form-label">Stock</label>
+        <select class="form-select" id="stockSelect">
+          <option value="">General Question</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card animate-in animate-in-delay-3">
+      <div class="chat-container" id="chatContainer">
+        <div class="empty-state" id="emptyState">
+          <span class="empty-icon">◈</span>
+          <p class="empty-text">Select an agent and ask a question about any stock or market topic</p>
+        </div>
+      </div>
+
+      <div class="chips mt-md" id="suggestions"></div>
+
+      <div class="chat-input-area">
+        <textarea class="form-textarea" id="chatInput" placeholder="Ask your question..." rows="1"></textarea>
+        <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()">Send</button>
+        <button class="btn btn-ghost" onclick="clearChat()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="scripts/api.js"></script>
+  <script src="scripts/app.js"></script>
+  <script>
+    let selectedAgent = null;
+    let conversationHistory = [];
+    let agents = [];
+
+    // ── Auth ──────────────────────────────────────────────
+    async function checkAuth() {
+      try {
+        const status = await API.getAuthStatus();
+        if (!status.authenticated) {
+          window.location.href = '/index.html';
+          return;
         }
+        const name = status.userName || 'Demo User';
+        document.getElementById('userName').textContent = name;
+        document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+      } catch (e) {
+        window.location.href = '/index.html';
+      }
+    }
 
-        async function loadAgents() {
-            try {
-                agents = await API.getAgents();
-                renderAgents(agents);
+    // ── Nav helpers ──────────────────────────────────────
+    function toggleNav() {
+      document.getElementById('navMenu').classList.toggle('open');
+    }
 
-                // Select General agent by default
-                const generalAgent = agents.find(a => a.type === 'GENERAL');
-                if (generalAgent) {
-                    selectAgent(generalAgent);
-                }
-            } catch (error) {
-                console.error('Error loading agents:', error);
-            }
+    async function logout() {
+      await API.logout();
+      window.location.href = '/';
+    }
+
+    // ── Load agents ──────────────────────────────────────
+    async function loadAgents() {
+      try {
+        agents = await API.getAgents();
+        renderAgents();
+
+        const generalAgent = agents.find(function(a) { return a.type === 'GENERAL'; });
+        if (generalAgent) {
+          selectAgent(generalAgent.type);
         }
+      } catch (error) {
+        console.error('Error loading agents:', error);
+      }
+    }
 
-        function renderAgents(agents) {
-            const grid = document.getElementById('agentGrid');
-            grid.innerHTML = agents.map(agent => `
-                <div class="agent-card ${selectedAgent?.type === agent.type ? 'selected' : ''}" 
-                     onclick="selectAgent(${JSON.stringify(agent).replace(/"/g, '&quot;')})">
-                    <div class="agent-icon">${agent.icon}</div>
-                    <div class="agent-info">
-                        <div class="agent-name">${agent.name}</div>
-                        <div class="agent-description">${agent.description}</div>
-                        <div class="agent-focus">
-                            ${agent.focusAreas.slice(0, 2).map(area => `<span class="focus-tag">${area}</span>`).join('')}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+    function renderAgents() {
+      var grid = document.getElementById('agentGrid');
+      var html = '';
+      for (var i = 0; i < agents.length; i++) {
+        var agent = agents[i];
+        var isSelected = selectedAgent === agent.type;
+        var tags = '';
+        var areas = agent.focusAreas || [];
+        for (var j = 0; j < Math.min(areas.length, 2); j++) {
+          tags += '<span class="agent-tag">' + escapeHtml(areas[j]) + '</span>';
         }
+        html += '<div class="agent-card' + (isSelected ? ' selected' : '') + '"'
+              + ' onclick="selectAgent(\'' + escapeHtml(agent.type) + '\')">'
+              + '<span class="agent-icon">' + escapeHtml(agent.icon) + '</span>'
+              + '<div class="agent-name">' + escapeHtml(agent.name) + '</div>'
+              + '<div class="agent-desc">' + escapeHtml(agent.description) + '</div>'
+              + '<div class="agent-tags">' + tags + '</div>'
+              + '</div>';
+      }
+      grid.innerHTML = html;
+    }
 
-        function selectAgent(agent) {
-            selectedAgent = agent;
-            renderAgents(agents);
-            updateSuggestedQuestions();
+    function escapeHtml(str) {
+      if (!str) return '';
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+
+    // ── Select agent ─────────────────────────────────────
+    function selectAgent(type) {
+      selectedAgent = type;
+      renderAgents();
+      updateSuggestions();
+    }
+
+    // ── Suggestion chips ─────────────────────────────────
+    var suggestionMap = {
+      'FUNDAMENTAL': [
+        'What are the key financial ratios?',
+        'Is this stock undervalued?',
+        'Analyze the balance sheet'
+      ],
+      'TECHNICAL': [
+        'What do the moving averages indicate?',
+        'Identify support and resistance',
+        'RSI analysis'
+      ],
+      'QUANTITATIVE': [
+        'Calculate risk-adjusted returns',
+        'Monte Carlo simulation',
+        'Portfolio correlation'
+      ],
+      'SENTIMENT': [
+        "What's the market sentiment?",
+        'Recent news impact',
+        'Social media trends'
+      ],
+      'GENERAL': [
+        'Give me an overview',
+        'Investment thesis',
+        'Risks and opportunities'
+      ]
+    };
+
+    function updateSuggestions() {
+      var container = document.getElementById('suggestions');
+      var items = suggestionMap[selectedAgent] || suggestionMap['GENERAL'];
+      var html = '';
+      for (var i = 0; i < items.length; i++) {
+        var btn = document.createElement('button');
+        btn.textContent = items[i];
+        // Build safely but we need onclick — use data approach
+        html += '<button class="chip" data-suggestion="' + escapeHtml(items[i]) + '">' + escapeHtml(items[i]) + '</button>';
+      }
+      container.innerHTML = html;
+
+      // Attach click handlers
+      var chips = container.querySelectorAll('.chip');
+      chips.forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          document.getElementById('chatInput').value = this.getAttribute('data-suggestion');
+          sendMessage();
+        });
+      });
+    }
+
+    // ── Load holdings ────────────────────────────────────
+    async function loadHoldings() {
+      try {
+        var holdings = await API.getHoldings();
+        var select = document.getElementById('stockSelect');
+        var optionsHtml = '<option value="">General Question</option>';
+        for (var i = 0; i < holdings.length; i++) {
+          var sym = escapeHtml(holdings[i].tradingSymbol);
+          optionsHtml += '<option value="' + sym + '">' + sym + '</option>';
         }
+        select.innerHTML = optionsHtml;
 
-        function updateSuggestedQuestions() {
-            if (!selectedAgent) return;
-
-            const container = document.getElementById('suggestedQuestions');
-            const chips = document.getElementById('questionChips');
-
-            // Get suggested questions based on agent type
-            const suggestions = {
-                'FUNDAMENTAL': [
-                    'What are the key financial metrics I should focus on?',
-                    'How does the valuation compare to peers?',
-                    'What are the main competitive advantages?'
-                ],
-                'TECHNICAL': [
-                    'What are the key support and resistance levels?',
-                    "What's the current trend and momentum?",
-                    'What would be good entry and exit points?'
-                ],
-                'QUANTITATIVE': [
-                    "What is the stock's volatility profile?",
-                    'How does it correlate with the broader market?',
-                    'What are the risk-adjusted returns?'
-                ],
-                'SENTIMENT': [
-                    "What's the current market sentiment?",
-                    'How is analyst coverage trending?',
-                    "What's the social media sentiment?"
-                ],
-                'GENERAL': [
-                    'Should I buy, hold, or sell this stock?',
-                    'What are the main risks and opportunities?',
-                    "What's the potential upside and downside?"
-                ]
-            };
-
-            const agentSuggestions = suggestions[selectedAgent.type] || suggestions['GENERAL'];
-            chips.innerHTML = agentSuggestions.map(q => `
-                <button class="question-chip" onclick="askSuggested('${q.replace(/'/g, "\\'")}')">${q}</button>
-            `).join('');
-
-            container.style.display = conversationHistory.length === 0 ? 'block' : 'none';
+        // Pre-select from URL param
+        var params = new URLSearchParams(window.location.search);
+        var symbol = params.get('symbol');
+        if (symbol) {
+          select.value = symbol;
         }
+      } catch (error) {
+        console.error('Error loading holdings:', error);
+      }
+    }
 
-        async function loadHoldings() {
-            try {
-                holdings = await API.getHoldings();
-                const select = document.getElementById('stockSelect');
-                select.innerHTML = '<option value="">General Question (No specific stock)</option>' +
-                    holdings.map(h => `<option value="${h.tradingSymbol}">${h.tradingSymbol}</option>`).join('');
-            } catch (error) {
-                console.error('Error loading holdings:', error);
-            }
-        }
+    // ── Send message ─────────────────────────────────────
+    async function sendMessage() {
+      var input = document.getElementById('chatInput');
+      var text = input.value.trim();
+      if (!text) return;
 
-        function askSuggested(question) {
-            document.getElementById('promptInput').value = question;
-            sendQuestion();
-        }
+      var symbol = document.getElementById('stockSelect').value;
 
-        async function sendQuestion() {
-            if (!selectedAgent) {
-                alert('Please select an AI agent first');
-                return;
-            }
+      // Hide empty state
+      var emptyState = document.getElementById('emptyState');
+      if (emptyState) emptyState.style.display = 'none';
 
-            const prompt = document.getElementById('promptInput').value.trim();
-            if (!prompt) return;
+      // Append user message
+      appendMessage('user', text, false);
 
-            const symbol = document.getElementById('stockSelect').value;
+      // Clear input
+      input.value = '';
 
-            // Hide empty state
-            document.getElementById('emptyState').style.display = 'none';
-            document.getElementById('suggestedQuestions').style.display = 'none';
+      // Show loading indicator
+      var loadingEl = document.createElement('div');
+      loadingEl.className = 'chat-message assistant';
+      loadingEl.id = 'loadingMsg';
+      var loadingBubble = document.createElement('div');
+      loadingBubble.className = 'chat-bubble';
+      var dots = document.createElement('div');
+      dots.className = 'loading-dots';
+      dots.appendChild(document.createElement('span'));
+      dots.appendChild(document.createElement('span'));
+      dots.appendChild(document.createElement('span'));
+      loadingBubble.appendChild(dots);
+      loadingEl.appendChild(loadingBubble);
+      document.getElementById('chatContainer').appendChild(loadingEl);
+      scrollToBottom();
 
-            // Add user message
-            addMessage('user', prompt);
-            document.getElementById('promptInput').value = '';
-
-            // Show loading
-            const loadingId = addMessage('assistant', '<div class="loading-dots"><span></span><span></span><span></span></div>', true);
-
-            try {
-                const response = await API.customAnalysis({
-                    symbol: symbol || null,
-                    prompt: prompt,
-                    agentType: selectedAgent.type,
-                    conversationHistory: conversationHistory
-                });
-
-                // Remove loading message
-                removeMessage(loadingId);
-
-                // Add AI response
-                addMessage('assistant', formatResponse(response));
-
-                // Update conversation history
-                conversationHistory.push(
-                    { role: 'user', content: prompt, timestamp: Date.now() },
-                    { role: 'assistant', content: response.answer, timestamp: response.timestamp }
-                );
-
-            } catch (error) {
-                removeMessage(loadingId);
-                addMessage('assistant', '❌ Error: ' + error.message);
-            }
-        }
-
-        function formatResponse(response) {
-            return `
-                <div class="ai-response">
-                    <div class="response-header">
-                        <span class="agent-badge">${selectedAgent.icon} ${selectedAgent.name}</span>
-                        <span class="confidence-badge">Confidence: ${Math.round(response.confidence * 100)}%</span>
-                    </div>
-                    <div class="response-content">${formatMarkdown(response.answer)}</div>
-                    ${response.sources && response.sources.length > 0 ? `
-                        <div class="response-sources">
-                            <strong>Sources:</strong> ${response.sources.join(', ')}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        function formatMarkdown(text) {
-            // Simple markdown formatting
-            return text
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/\n\n/g, '</p><p>')
-                .replace(/\n/g, '<br>');
-        }
-
-        let messageId = 0;
-        function addMessage(role, content, isLoading = false) {
-            const id = `msg-${messageId++}`;
-            const messagesDiv = document.getElementById('messages');
-            const messageEl = document.createElement('div');
-            messageEl.className = `message ${role}-message ${isLoading ? 'loading' : ''}`;
-            messageEl.id = id;
-            messageEl.innerHTML = `
-                <div class="message-content">${content}</div>
-            `;
-            messagesDiv.appendChild(messageEl);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            return id;
-        }
-
-        function removeMessage(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
-        function clearConversation() {
-            if (!confirm('Clear conversation history?')) return;
-            conversationHistory = [];
-            document.getElementById('messages').innerHTML = '';
-            document.getElementById('emptyState').style.display = 'flex';
-            updateSuggestedQuestions();
-        }
-
-        // Handle Enter key in textarea (Shift+Enter for new line)
-        document.getElementById('promptInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendQuestion();
-            }
+      try {
+        var response = await API.customAnalysis({
+          symbol: symbol || null,
+          prompt: text,
+          agentType: selectedAgent || 'GENERAL',
+          conversationHistory: conversationHistory
         });
 
-        init();
-    </script>
-</body>
+        // Remove loading
+        var lm = document.getElementById('loadingMsg');
+        if (lm) lm.remove();
 
+        // Build assistant content
+        var answerHtml = '';
+        if (response.answer) {
+          answerHtml = formatMarkdown(response.answer);
+        }
+        if (response.confidence !== undefined && response.confidence !== null) {
+          answerHtml += '<div class="confidence-badge" style="margin-top:0.5rem;font-size:0.8rem;opacity:0.7;">Confidence: ' + Math.round(response.confidence * 100) + '%</div>';
+        }
+        if (response.sources && response.sources.length > 0) {
+          answerHtml += '<div class="response-sources" style="margin-top:0.5rem;font-size:0.8rem;opacity:0.7;"><strong>Sources:</strong> ' + escapeHtml(response.sources.join(', ')) + '</div>';
+        }
+
+        appendMessage('assistant', answerHtml, true);
+
+        // Update conversation history
+        conversationHistory.push(
+          { role: 'user', content: text },
+          { role: 'assistant', content: response.answer || '' }
+        );
+
+      } catch (error) {
+        var lm2 = document.getElementById('loadingMsg');
+        if (lm2) lm2.remove();
+        appendMessage('assistant', 'Error: ' + escapeHtml(error.message), true);
+      }
+
+      scrollToBottom();
+    }
+
+    function appendMessage(role, content, isHtml) {
+      var container = document.getElementById('chatContainer');
+      var div = document.createElement('div');
+      div.className = 'chat-message ' + role;
+      var bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      if (isHtml) {
+        bubble.innerHTML = content;
+      } else {
+        bubble.textContent = content;
+      }
+      div.appendChild(bubble);
+      container.appendChild(div);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      var container = document.getElementById('chatContainer');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function formatMarkdown(text) {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+    }
+
+    // ── Clear chat ───────────────────────────────────────
+    function clearChat() {
+      var container = document.getElementById('chatContainer');
+      // Remove all children
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
+      }
+      // Recreate empty state
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.id = 'emptyState';
+      var icon = document.createElement('span');
+      icon.className = 'empty-icon';
+      icon.textContent = '◈';
+      var p = document.createElement('p');
+      p.className = 'empty-text';
+      p.textContent = 'Select an agent and ask a question about any stock or market topic';
+      empty.appendChild(icon);
+      empty.appendChild(p);
+      container.appendChild(empty);
+      conversationHistory = [];
+    }
+
+    // ── Enter to send, Shift+Enter for newline ───────────
+    document.getElementById('chatInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // ── Init ─────────────────────────────────────────────
+    (async function init() {
+      await checkAuth();
+      await loadAgents();
+      await loadHoldings();
+    })();
+  </script>
+</body>
 </html>

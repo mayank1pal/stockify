@@ -1,341 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="StockMan Dashboard - Your Portfolio Overview">
-    <title>Dashboard - StockMan</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/main.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockMan — Dashboard</title>
+  <link rel="stylesheet" href="styles/main.css">
 </head>
-
 <body>
-    <div class="page-wrapper">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-logo">
-                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#3b82f6" />
-                            <stop offset="100%" style="stop-color:#8b5cf6" />
-                        </linearGradient>
-                    </defs>
-                    <rect width="40" height="40" rx="8" fill="url(#logoGrad)" />
-                    <path d="M10 25 L15 17 L20 21 L25 14 L30 19" stroke="white" stroke-width="2" stroke-linecap="round"
-                        fill="none" />
-                </svg>
-                <h1>StockMan</h1>
-            </div>
+  <nav class="navbar">
+    <a href="/" class="navbar-brand"><span class="brand-mark">S</span> StockMan</a>
+    <ul class="navbar-nav" id="navMenu">
+      <li><a href="dashboard.html" class="active"><span class="nav-icon">◎</span> Dashboard</a></li>
+      <li><a href="holdings.html"><span class="nav-icon">▤</span> Holdings</a></li>
+      <li><a href="analysis.html"><span class="nav-icon">◈</span> Analysis</a></li>
+      <li><a href="copilot.html"><span class="nav-icon">⬡</span> Copilot</a></li>
+      <li><a href="strategy.html"><span class="nav-icon">◆</span> Strategy</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="navbar-user"><span id="userName"></span><div class="avatar" id="userAvatar"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+    </div>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+  </nav>
 
-            <ul class="nav-menu">
-                <li class="nav-item">
-                    <a href="/dashboard.html" class="nav-link active">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                        Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/holdings.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        </svg>
-                        Holdings
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/analysis.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
-                        </svg>
-                        AI Analysis
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/copilot.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1v3a7 7 0 0 0 14 0v-3h1a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3z" />
-                            <circle cx="9" cy="13" r="1" />
-                            <circle cx="15" cy="13" r="1" />
-                        </svg>
-                        Copilot
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/strategy.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20V10" />
-                            <path d="M18 20V4" />
-                            <path d="M6 20v-4" />
-                        </svg>
-                        Strategy
-                    </a>
-                </li>
-            </ul>
-
-            <div style="margin-top: auto; padding-top: var(--space-lg); border-top: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                    <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center;">
-                        <span id="user-initial" style="font-weight: 700; color: white;">U</span>
-                    </div>
-                    <div>
-                        <div id="user-name" style="font-weight: 600; font-size: 0.875rem;">Loading...</div>
-                        <div style="color: var(--text-muted); font-size: 0.75rem;">Active</div>
-                    </div>
-                </div>
-                <button id="logout-btn" class="btn btn-secondary btn-sm" style="width: 100%;">
-                    Logout
-                </button>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <header style="margin-bottom: var(--space-xl);">
-                <h2>Portfolio Dashboard</h2>
-                <p>Welcome back! Here's your portfolio summary.</p>
-            </header>
-
-            <!-- Stats Grid -->
-            <div class="stats-grid">
-                <div class="stat-card animate-in delay-1">
-                    <div class="stat-label">Total Investment</div>
-                    <div class="stat-value" id="total-investment">₹0</div>
-                    <span class="stat-change positive" id="investment-holdings">0 holdings</span>
-                </div>
-                <div class="stat-card animate-in delay-2">
-                    <div class="stat-label">Current Value</div>
-                    <div class="stat-value" id="current-value">₹0</div>
-                    <span class="stat-change" id="total-pnl-badge">₹0</span>
-                </div>
-                <div class="stat-card animate-in delay-3">
-                    <div class="stat-label">Today's Change</div>
-                    <div class="stat-value" id="day-change">₹0</div>
-                    <span class="stat-change" id="day-change-pct">0%</span>
-                </div>
-                <div class="stat-card animate-in delay-4">
-                    <div class="stat-label">Total P&L</div>
-                    <div class="stat-value" id="total-pnl">₹0</div>
-                    <span class="stat-change" id="total-pnl-pct">0%</span>
-                </div>
-            </div>
-
-            <!-- Two Column Layout -->
-            <div
-                style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-xl); margin-bottom: var(--space-xl);">
-                <!-- Top Holdings -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Top Performers</h3>
-                        <a href="/holdings.html" class="btn btn-secondary btn-sm">View All</a>
-                    </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Stock</th>
-                                    <th>LTP</th>
-                                    <th>P&L</th>
-                                    <th>Change</th>
-                                </tr>
-                            </thead>
-                            <tbody id="top-holdings-table">
-                                <tr>
-                                    <td colspan="4" style="text-align: center; padding: var(--space-xl);">
-                                        <div class="loader">
-                                            <div class="loader-dot"></div>
-                                            <div class="loader-dot"></div>
-                                            <div class="loader-dot"></div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Sector Allocation -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Sector Allocation</h3>
-                    </div>
-                    <div class="sector-list" id="sector-allocation">
-                        <div style="text-align: center; padding: var(--space-xl);">
-                            <div class="loader">
-                                <div class="loader-dot"></div>
-                                <div class="loader-dot"></div>
-                                <div class="loader-dot"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Quick Actions</h3>
-                </div>
-                <div
-                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md);">
-                    <a href="/analysis.html" class="btn btn-primary" style="justify-content: flex-start;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="m21 21-4.35-4.35" />
-                        </svg>
-                        Analyze Stock
-                    </a>
-                    <a href="/strategy.html?type=long" class="btn btn-secondary" style="justify-content: flex-start;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M12 20V10" />
-                            <path d="M18 20V4" />
-                            <path d="M6 20v-4" />
-                        </svg>
-                        Long-Term Strategy
-                    </a>
-                    <a href="/strategy.html?type=short" class="btn btn-secondary" style="justify-content: flex-start;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                            <polyline points="16 7 22 7 22 13" />
-                        </svg>
-                        Short-Term Strategy
-                    </a>
-                    <a href="/analysis.html?action=portfolio" class="btn btn-secondary"
-                        style="justify-content: flex-start;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
-                        </svg>
-                        Portfolio Analysis
-                    </a>
-                </div>
-            </div>
-        </main>
+  <div class="main-content">
+    <div class="page-header animate-in">
+      <h1>Portfolio Dashboard</h1>
+      <p class="subtitle">Real-time overview of your investments</p>
     </div>
 
-    <script src="/scripts/api.js"></script>
-    <script src="/scripts/app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Check authentication
-            const authStatus = await API.getAuthStatus();
-            if (!authStatus.authenticated) {
-                window.location.href = '/';
-                return;
-            }
+    <div class="stats-grid" id="statsGrid"></div>
 
-            // Update user info
-            document.getElementById('user-name').textContent = authStatus.userName || 'Demo User';
-            document.getElementById('user-initial').textContent = (authStatus.userName || 'D')[0].toUpperCase();
+    <div class="grid-sidebar">
+      <div class="card animate-in animate-in-delay-2">
+        <div class="card-header">
+          <h3>Top Holdings</h3>
+          <span class="card-label">By value</span>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th class="col-number">LTP</th>
+              <th class="col-number">P&amp;L</th>
+              <th class="col-number">Change</th>
+            </tr>
+          </thead>
+          <tbody id="topHoldingsBody"></tbody>
+        </table>
+      </div>
 
-            // Load portfolio data
-            loadDashboardData();
+      <div class="card animate-in animate-in-delay-3">
+        <div class="card-header"><h3>Sector Allocation</h3></div>
+        <div class="sector-list" id="sectorList"></div>
+      </div>
+    </div>
 
-            // Logout handler
-            document.getElementById('logout-btn').addEventListener('click', async () => {
-                await API.logout();
-                window.location.href = '/';
-            });
-        });
+    <div class="card mt-xl animate-in animate-in-delay-4">
+      <div class="card-header"><h3>Quick Actions</h3></div>
+      <div class="quick-actions">
+        <a href="analysis.html" class="quick-action"><span class="action-icon">◈</span> Analyze a Stock</a>
+        <a href="strategy.html?type=long" class="quick-action"><span class="action-icon">↗</span> Long-Term Strategy</a>
+        <a href="strategy.html?type=short" class="quick-action"><span class="action-icon">⚡</span> Short-Term Strategy</a>
+        <a href="copilot.html" class="quick-action"><span class="action-icon">⬡</span> Ask Copilot</a>
+      </div>
+    </div>
+  </div>
 
-        async function loadDashboardData() {
-            try {
-                const summary = await API.getPortfolioSummary();
+  <script src="scripts/api.js"></script>
+  <script src="scripts/app.js"></script>
+  <script>
+    function formatCurrency(value) {
+      return '\u20B9' + parseFloat(value).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
 
-                // Update stats
-                document.getElementById('total-investment').textContent = formatCurrency(summary.totalInvestment);
-                document.getElementById('current-value').textContent = formatCurrency(summary.currentValue);
-                document.getElementById('investment-holdings').textContent = `${summary.totalHoldings} holdings`;
+    function toggleNav() {
+      document.getElementById('navMenu').classList.toggle('open');
+    }
 
-                const pnlBadge = document.getElementById('total-pnl-badge');
-                pnlBadge.textContent = formatCurrency(summary.totalPnl);
-                pnlBadge.className = `stat-change ${summary.totalPnl >= 0 ? 'positive' : 'negative'}`;
+    async function logout() {
+      await API.logout();
+      window.location.href = '/index.html';
+    }
 
-                document.getElementById('day-change').textContent = formatCurrency(summary.dayChange);
-                const dayChangePct = document.getElementById('day-change-pct');
-                dayChangePct.textContent = `${summary.dayChangePercentage >= 0 ? '+' : ''}${summary.dayChangePercentage}%`;
-                dayChangePct.className = `stat-change ${summary.dayChangePercentage >= 0 ? 'positive' : 'negative'}`;
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Check authentication
+      const authStatus = await API.getAuthStatus();
+      if (!authStatus.authenticated) {
+        window.location.href = '/index.html';
+        return;
+      }
 
-                document.getElementById('total-pnl').textContent = formatCurrency(summary.totalPnl);
-                const totalPnlPct = document.getElementById('total-pnl-pct');
-                totalPnlPct.textContent = `${summary.totalPnlPercentage >= 0 ? '+' : ''}${summary.totalPnlPercentage}%`;
-                totalPnlPct.className = `stat-change ${summary.totalPnlPercentage >= 0 ? 'positive' : 'negative'}`;
+      // Update user info
+      const displayName = authStatus.userName || 'Demo User';
+      document.getElementById('userName').textContent = displayName;
+      const initials = displayName.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0, 2);
+      document.getElementById('userAvatar').textContent = initials;
 
-                // Update top holdings table
-                renderTopHoldings(summary.holdings);
+      // Load portfolio data
+      loadDashboardData();
+    });
 
-                // Update sector allocation
-                renderSectorAllocation(summary.sectorAllocation);
+    async function loadDashboardData() {
+      try {
+        const summary = await API.getPortfolioSummary();
 
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-            }
+        // Render stat cards into #statsGrid
+        renderStatCards(summary);
+
+        // Render top holdings table
+        renderTopHoldings(summary.holdings);
+
+        // Render sector allocation
+        renderSectorAllocation(summary.sectorAllocation);
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      }
+    }
+
+    function renderStatCards(summary) {
+      var grid = document.getElementById('statsGrid');
+      // Clear existing content
+      grid.textContent = '';
+
+      var dayChangePct = summary.dayChangePercentage;
+      var totalPnlPct = summary.totalPnlPercentage;
+
+      var cards = [
+        {
+          label: 'Total Investment',
+          value: formatCurrency(summary.totalInvestment),
+          change: summary.totalHoldings + ' holdings',
+          changeClass: 'positive',
+          highlight: false,
+          delay: 1
+        },
+        {
+          label: 'Current Value',
+          value: formatCurrency(summary.currentValue),
+          change: formatCurrency(summary.totalPnl),
+          changeClass: summary.totalPnl >= 0 ? 'positive' : 'negative',
+          highlight: false,
+          delay: 2
+        },
+        {
+          label: "Today's Change",
+          value: formatCurrency(summary.dayChange),
+          change: (dayChangePct >= 0 ? '+' : '') + dayChangePct + '%',
+          changeClass: dayChangePct >= 0 ? 'positive' : 'negative',
+          highlight: false,
+          delay: 3
+        },
+        {
+          label: 'Total P&L',
+          value: formatCurrency(summary.totalPnl),
+          change: (totalPnlPct >= 0 ? '+' : '') + totalPnlPct + '%',
+          changeClass: totalPnlPct >= 0 ? 'positive' : 'negative',
+          highlight: true,
+          delay: 4
         }
+      ];
 
-        function renderTopHoldings(holdings) {
-            const sortedHoldings = [...holdings].sort((a, b) => b.pnlPercentage - a.pnlPercentage).slice(0, 5);
-            const tbody = document.getElementById('top-holdings-table');
+      cards.forEach(function(card) {
+        var div = document.createElement('div');
+        div.className = 'stat-card animate-in animate-in-delay-' + card.delay;
+        if (card.highlight) div.classList.add('stat-highlight');
 
-            tbody.innerHTML = sortedHoldings.map(h => `
-                <tr>
-                    <td>
-                        <div class="symbol-cell">
-                            <div class="symbol-icon">${h.tradingSymbol.substring(0, 2)}</div>
-                            <div>
-                                <div class="symbol-name">${h.tradingSymbol}</div>
-                                <div class="symbol-exchange">${h.exchange}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td>₹${h.lastPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                    <td style="color: ${h.pnl >= 0 ? 'var(--success)' : 'var(--danger)'}">
-                        ${h.pnl >= 0 ? '+' : ''}₹${h.pnl.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td>
-                        <span class="stat-change ${h.pnlPercentage >= 0 ? 'positive' : 'negative'}">
-                            ${h.pnlPercentage >= 0 ? '+' : ''}${h.pnlPercentage}%
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
-        }
+        var labelEl = document.createElement('div');
+        labelEl.className = 'stat-label';
+        labelEl.textContent = card.label;
 
-        function renderSectorAllocation(allocation) {
-            const container = document.getElementById('sector-allocation');
-            const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
+        var valueEl = document.createElement('div');
+        valueEl.className = 'stat-value font-mono';
+        valueEl.textContent = card.value;
 
-            const entries = Object.entries(allocation);
-            container.innerHTML = entries.map(([sector, value], index) => `
-                <div class="sector-item">
-                    <div class="sector-color" style="background: ${colors[index % colors.length]}"></div>
-                    <span class="sector-name">${sector}</span>
-                    <span class="sector-value">${value}%</span>
-                </div>
-            `).join('');
-        }
+        var changeEl = document.createElement('span');
+        changeEl.className = 'stat-change ' + card.changeClass;
+        changeEl.textContent = card.change;
 
-        function formatCurrency(value) {
-            return '₹' + parseFloat(value).toLocaleString('en-IN', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        }
-    </script>
+        div.appendChild(labelEl);
+        div.appendChild(valueEl);
+        div.appendChild(changeEl);
+        grid.appendChild(div);
+      });
+    }
+
+    function renderTopHoldings(holdings) {
+      var sorted = holdings.slice().sort(function(a, b) {
+        var aVal = a.lastPrice * (a.quantity || 1);
+        var bVal = b.lastPrice * (b.quantity || 1);
+        return bVal - aVal;
+      }).slice(0, 5);
+
+      var tbody = document.getElementById('topHoldingsBody');
+      tbody.textContent = '';
+
+      sorted.forEach(function(h) {
+        var tr = document.createElement('tr');
+
+        var tdSymbol = document.createElement('td');
+        tdSymbol.className = 'col-symbol';
+        tdSymbol.textContent = h.tradingSymbol;
+
+        var tdLtp = document.createElement('td');
+        tdLtp.className = 'col-number';
+        tdLtp.textContent = '\u20B9' + h.lastPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+        var tdPnl = document.createElement('td');
+        tdPnl.className = 'col-number ' + (h.pnl >= 0 ? 'positive' : 'negative');
+        var pnlSign = h.pnl >= 0 ? '+' : '-';
+        tdPnl.textContent = pnlSign + '\u20B9' + Math.abs(h.pnl).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+        var tdChange = document.createElement('td');
+        tdChange.className = 'col-number';
+        var changeSpan = document.createElement('span');
+        changeSpan.className = 'stat-change ' + (h.pnlPercentage >= 0 ? 'positive' : 'negative');
+        changeSpan.textContent = (h.pnlPercentage >= 0 ? '+' : '') + h.pnlPercentage + '%';
+        tdChange.appendChild(changeSpan);
+
+        tr.appendChild(tdSymbol);
+        tr.appendChild(tdLtp);
+        tr.appendChild(tdPnl);
+        tr.appendChild(tdChange);
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderSectorAllocation(allocation) {
+      var container = document.getElementById('sectorList');
+      container.textContent = '';
+      var colors = ['#1E40AF', '#38bdf8', '#22c55e', '#ef4444', '#8b5cf6', '#f59e0b'];
+
+      var entries = Object.entries(allocation);
+      entries.forEach(function(entry, i) {
+        var sector = entry[0];
+        var pct = entry[1];
+
+        var item = document.createElement('div');
+        item.className = 'sector-item';
+
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'sector-name';
+        nameSpan.textContent = sector;
+
+        var barContainer = document.createElement('div');
+        barContainer.className = 'sector-bar-container';
+
+        var bar = document.createElement('div');
+        bar.className = 'sector-bar';
+        bar.style.width = pct + '%';
+        bar.style.background = colors[i % colors.length];
+        barContainer.appendChild(bar);
+
+        var pctSpan = document.createElement('span');
+        pctSpan.className = 'sector-pct';
+        pctSpan.textContent = pct + '%';
+
+        item.appendChild(nameSpan);
+        item.appendChild(barContainer);
+        item.appendChild(pctSpan);
+        container.appendChild(item);
+      });
+    }
+  </script>
 </body>
-
 </html>
