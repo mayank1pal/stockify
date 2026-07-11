@@ -137,6 +137,12 @@ public class ZerodhaService {
         }
     }
 
+    public KiteConnect getActiveKiteConnect() {
+        return kiteConnections.values().stream()
+                .findFirst()
+                .orElse(null);
+    }
+
     private Holding convertHolding(com.zerodhatech.models.Holding h) {
         BigDecimal avgPrice = BigDecimal.valueOf(h.averagePrice);
         BigDecimal lastPrice = BigDecimal.valueOf(h.lastPrice);

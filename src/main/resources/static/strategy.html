@@ -1,296 +1,496 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="StockMan - Investment Strategy">
-    <title>Strategy - StockMan</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/main.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockMan — Strategy</title>
+  <link rel="stylesheet" href="styles/main.css">
 </head>
-
 <body>
-    <div class="page-wrapper">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-logo">
-                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#3b82f6" />
-                            <stop offset="100%" style="stop-color:#8b5cf6" />
-                        </linearGradient>
-                    </defs>
-                    <rect width="40" height="40" rx="8" fill="url(#logoGrad)" />
-                    <path d="M10 25 L15 17 L20 21 L25 14 L30 19" stroke="white" stroke-width="2" stroke-linecap="round"
-                        fill="none" />
-                </svg>
-                <h1>StockMan</h1>
-            </div>
+  <nav class="navbar">
+    <a href="/" class="navbar-brand"><span class="brand-mark">S</span> StockMan</a>
+    <ul class="navbar-nav" id="navMenu">
+      <li><a href="dashboard.html"><span class="nav-icon">◎</span> Dashboard</a></li>
+      <li><a href="holdings.html"><span class="nav-icon">▤</span> Holdings</a></li>
+      <li><a href="analysis.html"><span class="nav-icon">◈</span> Analysis</a></li>
+      <li><a href="copilot.html"><span class="nav-icon">⬡</span> Copilot</a></li>
+      <li><a href="strategy.html" class="active"><span class="nav-icon">◆</span> Strategy</a></li>
+      <li><a href="scanner.html"><span class="nav-icon">◉</span> Scanner</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="navbar-user"><span id="userName"></span><div class="avatar" id="userAvatar"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+    </div>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+  </nav>
 
-            <ul class="nav-menu">
-                <li class="nav-item"><a href="/dashboard.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                        Dashboard
-                    </a></li>
-                <li class="nav-item"><a href="/holdings.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        </svg>
-                        Holdings
-                    </a></li>
-                <li class="nav-item"><a href="/analysis.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
-                        </svg>
-                        AI Analysis
-                    </a></li>
-                <li class="nav-item"><a href="/copilot.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1v3a7 7 0 0 0 14 0v-3h1a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3z" />
-                            <circle cx="9" cy="13" r="1" />
-                            <circle cx="15" cy="13" r="1" />
-                        </svg>
-                        Copilot
-                    </a></li>
-                <li class="nav-item"><a href="/strategy.html" class="nav-link active">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20V10" />
-                            <path d="M18 20V4" />
-                            <path d="M6 20v-4" />
-                        </svg>
-                        Strategy
-                    </a></li>
-                <li class="nav-item"><a href="/scanner.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21l-4.35-4.35" />
-                            <path d="M11 8v6" />
-                            <path d="M8 11h6" />
-                        </svg>
-                        Scanner
-                    </a></li>
-            </ul>
-
-            <div style="margin-top: auto; padding-top: var(--space-lg); border-top: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                    <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center;">
-                        <span id="user-initial" style="font-weight: 700; color: white;">U</span>
-                    </div>
-                    <div>
-                        <div id="user-name" style="font-weight: 600; font-size: 0.875rem;">Loading...</div>
-                        <div style="color: var(--text-muted); font-size: 0.75rem;">Active</div>
-                    </div>
-                </div>
-                <button id="logout-btn" class="btn btn-secondary btn-sm" style="width: 100%;">Logout</button>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <header style="margin-bottom: var(--space-xl);">
-                <h2>Investment Strategy</h2>
-                <p>AI-powered investment recommendations tailored to your goals</p>
-            </header>
-
-            <!-- Strategy Selection -->
-            <div class="card" style="margin-bottom: var(--space-xl);">
-                <h3 class="card-title" style="margin-bottom: var(--space-lg);">Generate Strategy</h3>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-lg);">
-                    <!-- Long Term Strategy -->
-                    <div style="padding: var(--space-xl); background: var(--bg-tertiary); border-radius: var(--radius-lg); border: 2px solid transparent;"
-                        id="long-term-card">
-                        <div
-                            style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                            <div
-                                style="width: 48px; height: 48px; border-radius: var(--radius-md); background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white"
-                                    stroke-width="2">
-                                    <path d="M12 20V10" />
-                                    <path d="M18 20V4" />
-                                    <path d="M6 20v-4" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4>Long-Term Growth</h4>
-                                <p style="font-size: 0.875rem; color: var(--text-muted);">3-5 year horizon</p>
-                            </div>
-                        </div>
-                        <p style="margin-bottom: var(--space-lg);">Wealth creation strategy focused on quality stocks
-                            with strong fundamentals and growth potential.</p>
-
-                        <div
-                            style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-bottom: var(--space-lg);">
-                            <div>
-                                <label style="font-size: 0.75rem; color: var(--text-muted);">Risk Tolerance</label>
-                                <select id="risk-tolerance"
-                                    style="width: 100%; padding: var(--space-sm); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); margin-top: var(--space-xs);">
-                                    <option value="LOW">Conservative</option>
-                                    <option value="MEDIUM" selected>Moderate</option>
-                                    <option value="HIGH">Aggressive</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="font-size: 0.75rem; color: var(--text-muted);">Primary Goal</label>
-                                <select id="primary-goal"
-                                    style="width: 100%; padding: var(--space-sm); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary); margin-top: var(--space-xs);">
-                                    <option value="WEALTH_CREATION" selected>Wealth Creation</option>
-                                    <option value="CAPITAL_PRESERVATION">Capital Preservation</option>
-                                    <option value="DIVIDEND_INCOME">Dividend Income</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <button id="long-term-btn" class="btn btn-success" style="width: 100%;">
-                            Generate Long-Term Strategy
-                        </button>
-                    </div>
-
-                    <!-- Short Term Strategy -->
-                    <div style="padding: var(--space-xl); background: var(--bg-tertiary); border-radius: var(--radius-lg); border: 2px solid transparent;"
-                        id="short-term-card">
-                        <div
-                            style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                            <div
-                                style="width: 48px; height: 48px; border-radius: var(--radius-md); background: linear-gradient(135deg, #f59e0b, #d97706); display: flex; align-items: center; justify-content: center;">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white"
-                                    stroke-width="2">
-                                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                                    <polyline points="16 7 22 7 22 13" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4>Short-Term Trading</h4>
-                                <p style="font-size: 0.875rem; color: var(--text-muted);">1-4 week horizon</p>
-                            </div>
-                        </div>
-                        <p style="margin-bottom: var(--space-lg);">Active trading opportunities based on technical
-                            analysis, momentum, and market trends.</p>
-
-                        <div
-                            style="background: var(--warning-bg); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-lg);">
-                            <p
-                                style="font-size: 0.875rem; color: var(--warning); display: flex; align-items: center; gap: var(--space-sm);">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path
-                                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                                    <line x1="12" y1="9" x2="12" y2="13" />
-                                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                                </svg>
-                                Higher risk strategy for experienced traders
-                            </p>
-                        </div>
-
-                        <button id="short-term-btn" class="btn btn-primary"
-                            style="width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706);">
-                            Generate Short-Term Strategy
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Strategy Results -->
-            <div id="strategy-results">
-                <div class="card" style="text-align: center; padding: var(--space-2xl);">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
-                        stroke-width="1" style="margin-bottom: var(--space-lg);">
-                        <path d="M12 20V10" />
-                        <path d="M18 20V4" />
-                        <path d="M6 20v-4" />
-                    </svg>
-                    <h3 style="margin-bottom: var(--space-sm);">Choose Your Strategy</h3>
-                    <p style="color: var(--text-muted);">Select a strategy type above to get AI-powered investment
-                        recommendations.</p>
-                </div>
-            </div>
-        </main>
+  <div class="main-content">
+    <div class="page-header animate-in">
+      <h1>Investment Strategy</h1>
+      <p class="subtitle">AI-generated investment recommendations</p>
     </div>
 
-    <script src="/scripts/api.js"></script>
-    <script src="/scripts/app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const authStatus = await API.getAuthStatus();
-            if (!authStatus.authenticated) {
-                window.location.href = '/';
-                return;
-            }
+    <div class="grid-2 mb-xl animate-in animate-in-delay-1">
+      <div class="strategy-option" id="longTermOption">
+        <h3>Long-Term Growth</h3>
+        <p class="horizon">3 — 5 year horizon</p>
+        <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 24px;">Patient wealth building through fundamentally strong companies</p>
+        <div class="form-group mb-md">
+          <label class="form-label">Risk Tolerance</label>
+          <select class="form-select" id="riskTolerance">
+            <option value="MEDIUM">Moderate</option>
+            <option value="LOW">Conservative</option>
+            <option value="HIGH">Aggressive</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label class="form-label">Primary Goal</label>
+          <select class="form-select" id="primaryGoal">
+            <option value="WEALTH_CREATION">Wealth Creation</option>
+            <option value="CAPITAL_PRESERVATION">Wealth Preservation</option>
+            <option value="DIVIDEND_INCOME">Dividend Income</option>
+          </select>
+        </div>
+        <button class="btn btn-primary w-full" id="longTermBtn" onclick="generateLongTerm()">Generate Strategy</button>
+      </div>
 
-            document.getElementById('user-name').textContent = authStatus.userName || 'Demo User';
-            document.getElementById('user-initial').textContent = (authStatus.userName || 'D')[0].toUpperCase();
-            document.getElementById('logout-btn').addEventListener('click', async () => {
-                await API.logout();
-                window.location.href = '/';
-            });
+      <div class="strategy-option" id="shortTermOption">
+        <h3>Short-Term Trading</h3>
+        <p class="horizon">1 — 4 week horizon</p>
+        <span class="badge badge-warning" style="margin-bottom: 16px;">Higher Risk</span>
+        <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 24px;">Technical analysis-driven opportunities for active traders</p>
+        <button class="btn btn-primary w-full" id="shortTermBtn" onclick="generateShortTerm()">Generate Strategy</button>
+      </div>
+    </div>
 
-            // Check for URL params
-            const params = new URLSearchParams(window.location.search);
-            const type = params.get('type');
+    <div id="loadingState" class="hidden">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
 
-            if (type === 'long') {
-                await generateLongTermStrategy();
-            } else if (type === 'short') {
-                await generateShortTermStrategy();
-            }
+    <div id="strategyResults" class="strategy-results hidden"></div>
+  </div>
 
-            // Event listeners
-            document.getElementById('long-term-btn').addEventListener('click', generateLongTermStrategy);
-            document.getElementById('short-term-btn').addEventListener('click', generateShortTermStrategy);
-        });
-
-        async function generateLongTermStrategy() {
-            const resultsContainer = document.getElementById('strategy-results');
-            resultsContainer.innerHTML = `
-                <div class="card" style="text-align: center; padding: var(--space-2xl);">
-                    <div class="loader" style="margin-bottom: var(--space-lg);"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>
-                    <h3>Generating Long-Term Strategy...</h3>
-                    <p style="color: var(--text-muted);">This may take a few seconds.</p>
-                </div>
-            `;
-
-            const riskTolerance = document.getElementById('risk-tolerance').value;
-            const primaryGoal = document.getElementById('primary-goal').value;
-
-            try {
-                const strategy = await API.getLongTermStrategy(riskTolerance, primaryGoal);
-                renderStrategy(strategy, 'strategy-results');
-            } catch (error) {
-                console.error('Error generating strategy:', error);
-                showError('strategy-results', 'Failed to generate strategy. Please try again.');
-            }
+  <script src="scripts/api.js"></script>
+  <script src="scripts/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        var authStatus = await API.getAuthStatus();
+        if (!authStatus.authenticated) {
+          window.location.href = '/';
+          return;
         }
 
-        async function generateShortTermStrategy() {
-            const resultsContainer = document.getElementById('strategy-results');
-            resultsContainer.innerHTML = `
-                <div class="card" style="text-align: center; padding: var(--space-2xl);">
-                    <div class="loader" style="margin-bottom: var(--space-lg);"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>
-                    <h3>Generating Short-Term Strategy...</h3>
-                    <p style="color: var(--text-muted);">This may take a few seconds.</p>
-                </div>
-            `;
+        var name = authStatus.userName || 'Demo User';
+        var userNameEl = document.getElementById('userName');
+        var userAvatarEl = document.getElementById('userAvatar');
+        if (userNameEl) userNameEl.textContent = name;
+        if (userAvatarEl) userAvatarEl.textContent = name.charAt(0).toUpperCase();
+      } catch (e) {
+        window.location.href = '/';
+        return;
+      }
 
-            try {
-                const strategy = await API.getShortTermStrategy();
-                renderStrategy(strategy, 'strategy-results');
-            } catch (error) {
-                console.error('Error generating strategy:', error);
-                showError('strategy-results', 'Failed to generate strategy. Please try again.');
-            }
+      // Check for URL params to auto-trigger
+      var params = new URLSearchParams(window.location.search);
+      var type = params.get('type');
+      if (type === 'long') {
+        generateLongTerm();
+      } else if (type === 'short') {
+        generateShortTerm();
+      }
+    });
+
+    function toggleNav() {
+      var nav = document.getElementById('navMenu');
+      if (nav) nav.classList.toggle('open');
+    }
+
+    async function logout() {
+      try {
+        await API.logout();
+      } catch (e) {
+        // ignore
+      }
+      window.location.href = '/';
+    }
+
+    async function generateLongTerm() {
+      var btn = document.getElementById('longTermBtn');
+      var loading = document.getElementById('loadingState');
+      var results = document.getElementById('strategyResults');
+
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      loading.classList.remove('hidden');
+      results.classList.add('hidden');
+
+      var riskTolerance = document.getElementById('riskTolerance').value;
+      var primaryGoal = document.getElementById('primaryGoal').value;
+
+      try {
+        var data = await API.getLongTermStrategy(riskTolerance, primaryGoal);
+        renderStrategy(data, 'long');
+        loading.classList.add('hidden');
+        results.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error generating long-term strategy:', error);
+        loading.classList.add('hidden');
+        showStrategyError(results);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Strategy';
+      }
+    }
+
+    async function generateShortTerm() {
+      var btn = document.getElementById('shortTermBtn');
+      var loading = document.getElementById('loadingState');
+      var results = document.getElementById('strategyResults');
+
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      loading.classList.remove('hidden');
+      results.classList.add('hidden');
+
+      try {
+        var data = await API.getShortTermStrategy();
+        renderStrategy(data, 'short');
+        loading.classList.add('hidden');
+        results.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error generating short-term strategy:', error);
+        loading.classList.add('hidden');
+        showStrategyError(results);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Strategy';
+      }
+    }
+
+    function showStrategyError(container) {
+      container.textContent = '';
+      var wrapper = document.createElement('div');
+      wrapper.className = 'card';
+      wrapper.style.cssText = 'text-align:center;padding:2rem;';
+      var msg = document.createElement('p');
+      msg.style.color = 'var(--danger)';
+      msg.textContent = 'Failed to generate strategy. Please try again.';
+      wrapper.appendChild(msg);
+      container.appendChild(wrapper);
+      container.classList.remove('hidden');
+    }
+
+    function escapeHtml(str) {
+      if (str == null) return '';
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(String(str)));
+      return div.textContent;
+    }
+
+    function renderStrategy(data, type) {
+      var container = document.getElementById('strategyResults');
+      if (!container || !data) return;
+
+      // Clear previous content
+      container.textContent = '';
+
+      // --- Summary cards ---
+      var strategyLabel = type === 'long' ? 'Long-Term Growth' : 'Short-Term Trading';
+      var generatedDate = data.generatedAt ? new Date(data.generatedAt).toLocaleDateString() : new Date().toLocaleDateString();
+      var riskLevel = data.riskLevel || 'N/A';
+      var riskBadgeClass = riskLevel === 'LOW' ? 'badge-buy' : riskLevel === 'HIGH' ? 'badge-sell' : 'badge-hold';
+
+      var summaryRow = document.createElement('div');
+      summaryRow.className = 'strategy-summary mb-xl';
+
+      var summaryCards = [
+        { label: 'Strategy Type', value: strategyLabel, isBadge: false },
+        { label: 'Generated', value: generatedDate, isBadge: false },
+        { label: 'Risk Level', value: riskLevel, isBadge: true, badgeClass: riskBadgeClass }
+      ];
+      if (data.portfolioHealthScore != null) {
+        summaryCards.push({ label: 'Health Score', value: String(data.portfolioHealthScore), isBadge: false });
+      }
+
+      for (var s = 0; s < summaryCards.length; s++) {
+        var sc = document.createElement('div');
+        sc.className = 'stat-card';
+        var lbl = document.createElement('div');
+        lbl.className = 'stat-label';
+        lbl.textContent = summaryCards[s].label;
+        var val = document.createElement('div');
+        val.className = 'stat-value';
+        if (summaryCards[s].isBadge) {
+          var badge = document.createElement('span');
+          badge.className = 'badge ' + summaryCards[s].badgeClass;
+          badge.textContent = summaryCards[s].value;
+          val.appendChild(badge);
+        } else {
+          val.textContent = summaryCards[s].value;
         }
-    </script>
+        sc.appendChild(lbl);
+        sc.appendChild(val);
+        summaryRow.appendChild(sc);
+      }
+      container.appendChild(summaryRow);
+
+      // --- Summary text ---
+      if (data.summary) {
+        var summaryCard = document.createElement('div');
+        summaryCard.className = 'card mb-xl';
+        var summaryP = document.createElement('p');
+        summaryP.style.cssText = 'font-size:1rem;line-height:1.7;';
+        summaryP.textContent = data.summary;
+        summaryCard.appendChild(summaryP);
+        container.appendChild(summaryCard);
+      }
+
+      // --- Stock groups (Buy, Hold, Sell) ---
+      var buyStocks = data.stocksToBuy || [];
+      var holdStocks = data.stocksToHold || [];
+      var sellStocks = data.stocksToSell || [];
+
+      if (buyStocks.length || holdStocks.length || sellStocks.length) {
+        var stockGrid = document.createElement('div');
+        stockGrid.className = 'grid-3 mb-xl';
+
+        var groups = [
+          { title: '\u2191 Stocks to Buy', stocks: buyStocks, badgeClass: 'buy' },
+          { title: '\u2194 Stocks to Hold', stocks: holdStocks, badgeClass: 'hold' },
+          { title: '\u2193 Stocks to Sell', stocks: sellStocks, badgeClass: 'sell' }
+        ];
+
+        for (var g = 0; g < groups.length; g++) {
+          var group = document.createElement('div');
+          group.className = 'stock-group';
+          var groupTitle = document.createElement('h4');
+          groupTitle.textContent = groups[g].title;
+          group.appendChild(groupTitle);
+
+          var badgesDiv = document.createElement('div');
+          badgesDiv.className = 'stock-badges';
+          if (groups[g].stocks.length) {
+            for (var b = 0; b < groups[g].stocks.length; b++) {
+              var stockBadge = document.createElement('span');
+              stockBadge.className = 'stock-badge ' + groups[g].badgeClass;
+              stockBadge.textContent = groups[g].stocks[b];
+              badgesDiv.appendChild(stockBadge);
+            }
+          } else {
+            var noRec = document.createElement('p');
+            noRec.className = 'text-muted';
+            noRec.textContent = 'No recommendations';
+            badgesDiv.appendChild(noRec);
+          }
+          group.appendChild(badgesDiv);
+          stockGrid.appendChild(group);
+        }
+        container.appendChild(stockGrid);
+      }
+
+      // --- Recommendations ---
+      var recs = data.recommendations || [];
+      if (recs.length) {
+        var recsCard = document.createElement('div');
+        recsCard.className = 'card mb-xl';
+        var recsTitle = document.createElement('h4');
+        recsTitle.style.marginBottom = '16px';
+        recsTitle.textContent = 'Strategic Recommendations';
+        recsCard.appendChild(recsTitle);
+
+        for (var r = 0; r < recs.length; r++) {
+          var rec = recs[r];
+          var priority = rec.priority || '';
+          var borderColor = priority === 'HIGH' ? 'var(--danger)' : priority === 'MEDIUM' ? 'var(--warning)' : 'var(--success)';
+          var pClass = priority === 'HIGH' ? 'badge-sell' : priority === 'MEDIUM' ? 'badge-hold' : 'badge-buy';
+
+          var recItem = document.createElement('div');
+          recItem.className = 'card';
+          recItem.style.cssText = 'margin-bottom:12px;border-left:3px solid ' + borderColor + ';';
+
+          var recHeader = document.createElement('div');
+          recHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;';
+          var recTitleEl = document.createElement('h5');
+          recTitleEl.style.fontSize = '1rem';
+          recTitleEl.textContent = rec.title || '';
+          var recBadge = document.createElement('span');
+          recBadge.className = 'badge ' + pClass;
+          recBadge.textContent = priority;
+          recHeader.appendChild(recTitleEl);
+          recHeader.appendChild(recBadge);
+          recItem.appendChild(recHeader);
+
+          var recDesc = document.createElement('p');
+          recDesc.style.marginBottom = '8px';
+          recDesc.textContent = rec.description || '';
+          recItem.appendChild(recDesc);
+
+          var recMeta = document.createElement('div');
+          recMeta.style.cssText = 'display:flex;gap:24px;font-size:0.875rem;color:var(--text-muted);';
+          if (rec.timeframe) {
+            var tfSpan = document.createElement('span');
+            tfSpan.textContent = 'Timeframe: ' + rec.timeframe;
+            recMeta.appendChild(tfSpan);
+          }
+          if (rec.expectedImpact) {
+            var impSpan = document.createElement('span');
+            impSpan.textContent = 'Impact: ' + rec.expectedImpact;
+            recMeta.appendChild(impSpan);
+          }
+          recItem.appendChild(recMeta);
+          recsCard.appendChild(recItem);
+        }
+        container.appendChild(recsCard);
+      }
+
+      // --- Rebalancing Actions ---
+      var actions = data.rebalanceActions || data.rebalancingActions || [];
+      if (actions.length) {
+        var actionsCard = document.createElement('div');
+        actionsCard.className = 'card mb-xl';
+        var actionsTitle = document.createElement('h4');
+        actionsTitle.style.marginBottom = '16px';
+        actionsTitle.textContent = 'Rebalancing Actions';
+        actionsCard.appendChild(actionsTitle);
+
+        var tableWrap = document.createElement('div');
+        var table = document.createElement('table');
+        table.className = 'data-table';
+        var thead = document.createElement('thead');
+        var headerRow = document.createElement('tr');
+        var headers = ['Stock', 'Action', 'Current Weight', 'Target Weight', 'Reason'];
+        for (var h = 0; h < headers.length; h++) {
+          var th = document.createElement('th');
+          th.textContent = headers[h];
+          headerRow.appendChild(th);
+        }
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        var tbody = document.createElement('tbody');
+        for (var a = 0; a < actions.length; a++) {
+          var action = actions[a];
+          var tr = document.createElement('tr');
+
+          var tdSymbol = document.createElement('td');
+          var strong = document.createElement('strong');
+          strong.textContent = action.symbol || '';
+          tdSymbol.appendChild(strong);
+          tr.appendChild(tdSymbol);
+
+          var tdAction = document.createElement('td');
+          var actionBadge = document.createElement('span');
+          var abClass = (action.action === 'BUY' || action.action === 'INCREASE') ? 'badge-buy' : 'badge-sell';
+          actionBadge.className = 'badge ' + abClass;
+          actionBadge.textContent = action.action || '';
+          tdAction.appendChild(actionBadge);
+          tr.appendChild(tdAction);
+
+          var tdCurrent = document.createElement('td');
+          tdCurrent.textContent = action.currentWeight != null ? action.currentWeight : '-';
+          tr.appendChild(tdCurrent);
+
+          var tdTarget = document.createElement('td');
+          tdTarget.textContent = action.targetWeight != null ? action.targetWeight : '-';
+          tr.appendChild(tdTarget);
+
+          var tdReason = document.createElement('td');
+          tdReason.textContent = action.reason || '';
+          tr.appendChild(tdReason);
+
+          tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        tableWrap.appendChild(table);
+        actionsCard.appendChild(tableWrap);
+        container.appendChild(actionsCard);
+      }
+
+      // --- Risks and Opportunities ---
+      var risks = data.riskMitigationSteps || [];
+      var sectors = data.sectorOpportunities || [];
+      var trends = data.emergingTrends || [];
+
+      if (risks.length || sectors.length || trends.length) {
+        var bottomGrid = document.createElement('div');
+        bottomGrid.className = 'grid-2 mb-xl';
+
+        if (risks.length) {
+          var risksCard = document.createElement('div');
+          risksCard.className = 'card';
+          var risksTitle = document.createElement('h4');
+          risksTitle.style.marginBottom = '12px';
+          risksTitle.textContent = 'Risk Mitigation';
+          risksCard.appendChild(risksTitle);
+
+          var riskList = document.createElement('ul');
+          riskList.style.cssText = 'list-style:none;padding:0;margin:0;';
+          for (var i = 0; i < risks.length; i++) {
+            var li = document.createElement('li');
+            li.style.cssText = 'padding:8px 0;border-bottom:1px solid var(--border-color,#eee);display:flex;align-items:start;gap:8px;';
+            var warnIcon = document.createElement('span');
+            warnIcon.style.cssText = 'color:var(--warning);flex-shrink:0;';
+            warnIcon.textContent = '\u26A0';
+            var riskText = document.createElement('span');
+            riskText.textContent = risks[i];
+            li.appendChild(warnIcon);
+            li.appendChild(riskText);
+            riskList.appendChild(li);
+          }
+          risksCard.appendChild(riskList);
+          bottomGrid.appendChild(risksCard);
+        }
+
+        if (sectors.length || trends.length) {
+          var oppCard = document.createElement('div');
+          oppCard.className = 'card';
+          var oppTitle = document.createElement('h4');
+          oppTitle.style.marginBottom = '12px';
+          oppTitle.textContent = 'Opportunities';
+          oppCard.appendChild(oppTitle);
+
+          if (sectors.length) {
+            var secDiv = document.createElement('div');
+            secDiv.style.marginBottom = '12px';
+            var secLabel = document.createElement('div');
+            secLabel.className = 'text-muted';
+            secLabel.style.cssText = 'font-size:0.875rem;margin-bottom:6px;';
+            secLabel.textContent = 'Sector Opportunities';
+            secDiv.appendChild(secLabel);
+            for (var i = 0; i < sectors.length; i++) {
+              var sb = document.createElement('span');
+              sb.className = 'badge badge-buy';
+              sb.style.cssText = 'margin-right:6px;margin-bottom:6px;';
+              sb.textContent = sectors[i];
+              secDiv.appendChild(sb);
+            }
+            oppCard.appendChild(secDiv);
+          }
+
+          if (trends.length) {
+            var tDiv = document.createElement('div');
+            var tLabel = document.createElement('div');
+            tLabel.className = 'text-muted';
+            tLabel.style.cssText = 'font-size:0.875rem;margin-bottom:6px;';
+            tLabel.textContent = 'Emerging Trends';
+            tDiv.appendChild(tLabel);
+            for (var i = 0; i < trends.length; i++) {
+              var tb = document.createElement('span');
+              tb.className = 'badge badge-hold';
+              tb.style.cssText = 'margin-right:6px;margin-bottom:6px;';
+              tb.textContent = trends[i];
+              tDiv.appendChild(tb);
+            }
+            oppCard.appendChild(tDiv);
+          }
+
+          bottomGrid.appendChild(oppCard);
+        }
+
+        container.appendChild(bottomGrid);
+      }
+    }
+  </script>
 </body>
-
 </html>

@@ -1,220 +1,268 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="StockMan - Your Portfolio Holdings">
-    <title>Holdings - StockMan</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/main.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockMan — Holdings</title>
+  <link rel="stylesheet" href="styles/main.css">
 </head>
-
 <body>
-    <div class="page-wrapper">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-logo">
-                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#3b82f6" />
-                            <stop offset="100%" style="stop-color:#8b5cf6" />
-                        </linearGradient>
-                    </defs>
-                    <rect width="40" height="40" rx="8" fill="url(#logoGrad)" />
-                    <path d="M10 25 L15 17 L20 21 L25 14 L30 19" stroke="white" stroke-width="2" stroke-linecap="round"
-                        fill="none" />
-                </svg>
-                <h1>StockMan</h1>
-            </div>
+  <nav class="navbar">
+    <a href="/" class="navbar-brand"><span class="brand-mark">S</span> StockMan</a>
+    <ul class="navbar-nav" id="navMenu">
+      <li><a href="dashboard.html"><span class="nav-icon">&#9678;</span> Dashboard</a></li>
+      <li><a href="holdings.html" class="active"><span class="nav-icon">&#9636;</span> Holdings</a></li>
+      <li><a href="analysis.html"><span class="nav-icon">&#9672;</span> Analysis</a></li>
+      <li><a href="copilot.html"><span class="nav-icon">&#11041;</span> Copilot</a></li>
+      <li><a href="strategy.html"><span class="nav-icon">&#9670;</span> Strategy</a></li>
+      <li><a href="scanner.html"><span class="nav-icon">&#9673;</span> Scanner</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="navbar-user"><span id="userName"></span><div class="avatar" id="userAvatar"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+    </div>
+    <button class="nav-toggle" onclick="toggleNav()">&#9776;</button>
+  </nav>
 
-            <ul class="nav-menu">
-                <li class="nav-item"><a href="/dashboard.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                        Dashboard
-                    </a></li>
-                <li class="nav-item"><a href="/holdings.html" class="nav-link active">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        </svg>
-                        Holdings
-                    </a></li>
-                <li class="nav-item"><a href="/analysis.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
-                        </svg>
-                        AI Analysis
-                    </a></li>
-                <li class="nav-item"><a href="/copilot.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1v3a7 7 0 0 0 14 0v-3h1a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3z" />
-                            <circle cx="9" cy="13" r="1" />
-                            <circle cx="15" cy="13" r="1" />
-                        </svg>
-                        Copilot
-                    </a></li>
-                <li class="nav-item"><a href="/strategy.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20V10" />
-                            <path d="M18 20V4" />
-                            <path d="M6 20v-4" />
-                        </svg>
-                        Strategy
-                    </a></li>
-                <li class="nav-item"><a href="/scanner.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21l-4.35-4.35" />
-                            <path d="M11 8v6" />
-                            <path d="M8 11h6" />
-                        </svg>
-                        Scanner
-                    </a></li>
-            </ul>
-
-            <div style="margin-top: auto; padding-top: var(--space-lg); border-top: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                    <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center;">
-                        <span id="user-initial" style="font-weight: 700; color: white;">U</span>
-                    </div>
-                    <div>
-                        <div id="user-name" style="font-weight: 600; font-size: 0.875rem;">Loading...</div>
-                        <div style="color: var(--text-muted); font-size: 0.75rem;">Active</div>
-                    </div>
-                </div>
-                <button id="logout-btn" class="btn btn-secondary btn-sm" style="width: 100%;">Logout</button>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <header
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl);">
-                <div>
-                    <h2>Portfolio Holdings</h2>
-                    <p>Your complete list of stock holdings</p>
-                </div>
-                <div style="display: flex; gap: var(--space-md);">
-                    <button id="sort-pnl" class="btn btn-secondary btn-sm">Sort by P&L</button>
-                    <button id="sort-value" class="btn btn-secondary btn-sm">Sort by Value</button>
-                </div>
-            </header>
-
-            <!-- Summary Stats -->
-            <div class="stats-grid" style="margin-bottom: var(--space-xl);">
-                <div class="stat-card">
-                    <div class="stat-label">Total Holdings</div>
-                    <div class="stat-value" id="total-holdings">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Profitable</div>
-                    <div class="stat-value" id="profitable-holdings" style="color: var(--success);">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">In Loss</div>
-                    <div class="stat-value" id="losing-holdings" style="color: var(--danger);">0</div>
-                </div>
-            </div>
-
-            <!-- Holdings Table -->
-            <div class="card">
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Stock</th>
-                                <th>Qty</th>
-                                <th>Avg Price</th>
-                                <th>LTP</th>
-                                <th>Invested</th>
-                                <th>Current</th>
-                                <th>P&L</th>
-                                <th>Change</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="holdings-table">
-                            <tr>
-                                <td colspan="9" style="text-align: center; padding: var(--space-xl);">
-                                    <div class="loader">
-                                        <div class="loader-dot"></div>
-                                        <div class="loader-dot"></div>
-                                        <div class="loader-dot"></div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
+  <div class="main-content">
+    <div class="page-header animate-in">
+      <h1>Holdings</h1>
+      <p class="subtitle">Complete view of your stock portfolio</p>
     </div>
 
-    <script src="/scripts/api.js"></script>
-    <script src="/scripts/app.js"></script>
-    <script>
-        let holdings = [];
+    <div class="stats-grid" id="summaryStats"></div>
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const authStatus = await API.getAuthStatus();
-            if (!authStatus.authenticated) {
-                window.location.href = '/';
-                return;
-            }
+    <div class="flex items-center justify-between mb-md animate-in animate-in-delay-1">
+      <div class="flex gap-sm">
+        <button class="btn btn-secondary btn-sm" id="sortPnlBtn" onclick="sortBy('pnl')">Sort by P&amp;L</button>
+        <button class="btn btn-ghost btn-sm" id="sortValueBtn" onclick="sortBy('value')">Sort by Value</button>
+      </div>
+    </div>
 
-            document.getElementById('user-name').textContent = authStatus.userName || 'Demo User';
-            document.getElementById('user-initial').textContent = (authStatus.userName || 'D')[0].toUpperCase();
-            document.getElementById('logout-btn').addEventListener('click', async () => {
-                await API.logout();
-                window.location.href = '/';
-            });
+    <div class="card animate-in animate-in-delay-2">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th class="col-number">Qty</th>
+            <th class="col-number">Avg Price</th>
+            <th class="col-number">LTP</th>
+            <th class="col-number">Invested</th>
+            <th class="col-number">Current</th>
+            <th class="col-number">P&amp;L</th>
+            <th class="col-number">Change %</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="holdingsBody"></tbody>
+      </table>
+    </div>
+  </div>
 
-            await loadHoldings();
+  <script src="scripts/api.js"></script>
+  <script src="scripts/app.js"></script>
+  <script>
+    let holdings = [];
+    let currentSort = 'pnl';
 
-            document.getElementById('sort-pnl').addEventListener('click', () => sortBy('pnl'));
-            document.getElementById('sort-value').addEventListener('click', () => sortBy('value'));
+    // Use formatCurrency/formatPercentage from api.js if available, otherwise define them
+    if (typeof formatCurrency === 'undefined') {
+      window.formatCurrency = function(value) {
+        return '\u20B9' + parseFloat(value).toLocaleString('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      };
+    }
+    if (typeof formatPercentage === 'undefined') {
+      window.formatPercentage = function(value) {
+        const num = parseFloat(value);
+        const sign = num >= 0 ? '+' : '';
+        return sign + num.toFixed(2) + '%';
+      };
+    }
+
+    function toggleNav() {
+      document.getElementById('navMenu').classList.toggle('open');
+    }
+
+    async function logout() {
+      await API.logout();
+      window.location.href = '/';
+    }
+
+    function renderSummary() {
+      const total = holdings.length;
+      const profitable = holdings.filter(function(h) { return parseFloat(h.pnl) > 0; }).length;
+      const inLoss = holdings.filter(function(h) { return parseFloat(h.pnl) < 0; }).length;
+
+      var container = document.getElementById('summaryStats');
+      // Clear existing content
+      container.textContent = '';
+
+      // Total Holdings card
+      var card1 = document.createElement('div');
+      card1.className = 'stat-card';
+      var label1 = document.createElement('span');
+      label1.className = 'stat-label';
+      label1.textContent = 'Total Holdings';
+      var value1 = document.createElement('span');
+      value1.className = 'stat-value';
+      value1.textContent = total;
+      card1.appendChild(label1);
+      card1.appendChild(value1);
+
+      // Profitable card
+      var card2 = document.createElement('div');
+      card2.className = 'stat-card';
+      var label2 = document.createElement('span');
+      label2.className = 'stat-label';
+      label2.textContent = 'Profitable';
+      var value2 = document.createElement('span');
+      value2.className = 'stat-value positive';
+      value2.textContent = profitable;
+      card2.appendChild(label2);
+      card2.appendChild(value2);
+
+      // In Loss card
+      var card3 = document.createElement('div');
+      card3.className = 'stat-card';
+      var label3 = document.createElement('span');
+      label3.className = 'stat-label';
+      label3.textContent = 'In Loss';
+      var value3 = document.createElement('span');
+      value3.className = 'stat-value negative';
+      value3.textContent = inLoss;
+      card3.appendChild(label3);
+      card3.appendChild(value3);
+
+      container.appendChild(card1);
+      container.appendChild(card2);
+      container.appendChild(card3);
+    }
+
+    function createCell(text, className) {
+      var td = document.createElement('td');
+      if (className) td.className = className;
+      td.textContent = text;
+      return td;
+    }
+
+    function renderTable() {
+      var tbody = document.getElementById('holdingsBody');
+      tbody.textContent = '';
+
+      if (!holdings || holdings.length === 0) {
+        var emptyRow = document.createElement('tr');
+        var emptyCell = document.createElement('td');
+        emptyCell.setAttribute('colspan', '9');
+        emptyCell.style.textAlign = 'center';
+        emptyCell.style.padding = '2rem';
+        emptyCell.textContent = 'No holdings found.';
+        emptyRow.appendChild(emptyCell);
+        tbody.appendChild(emptyRow);
+        return;
+      }
+
+      holdings.forEach(function(h) {
+        var pnl = parseFloat(h.pnl);
+        var pnlPct = parseFloat(h.pnlPercentage);
+        var pnlClass = pnl >= 0 ? 'positive' : 'negative';
+        var invested = h.investedValue || (parseFloat(h.averagePrice) * parseInt(h.quantity));
+        var current = h.currentValue || (parseFloat(h.lastPrice) * parseInt(h.quantity));
+        var symbol = h.tradingSymbol;
+
+        var tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', function(event) {
+          // Don't navigate if the click was on the button
+          if (event.target.tagName === 'BUTTON') return;
+          window.location.href = 'analysis.html?symbol=' + encodeURIComponent(symbol);
         });
 
-        async function loadHoldings() {
-            try {
-                const summary = await API.getPortfolioSummary();
-                holdings = summary.holdings;
+        tr.appendChild(createCell(symbol, 'col-symbol'));
+        tr.appendChild(createCell(h.quantity, 'col-number'));
+        tr.appendChild(createCell(formatCurrency(h.averagePrice), 'col-number'));
+        tr.appendChild(createCell(formatCurrency(h.lastPrice), 'col-number'));
+        tr.appendChild(createCell(formatCurrency(invested), 'col-number'));
+        tr.appendChild(createCell(formatCurrency(current), 'col-number'));
 
-                document.getElementById('total-holdings').textContent = summary.totalHoldings;
-                document.getElementById('profitable-holdings').textContent = summary.profitableHoldings;
-                document.getElementById('losing-holdings').textContent = summary.losingHoldings;
+        var pnlCell = createCell(formatCurrency(pnl), 'col-number ' + pnlClass);
+        tr.appendChild(pnlCell);
 
-                renderHoldingsTable(holdings, 'holdings-table');
-            } catch (error) {
-                console.error('Error loading holdings:', error);
-                showError('holdings-table', 'Failed to load holdings');
-            }
+        var pctCell = createCell(formatPercentage(pnlPct), 'col-number ' + pnlClass);
+        tr.appendChild(pctCell);
+
+        var actionTd = document.createElement('td');
+        var btn = document.createElement('button');
+        btn.className = 'btn btn-ghost btn-sm';
+        btn.textContent = 'Analyze';
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          window.location.href = 'analysis.html?symbol=' + encodeURIComponent(symbol);
+        });
+        actionTd.appendChild(btn);
+        tr.appendChild(actionTd);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function sortBy(field) {
+      currentSort = field;
+      if (field === 'pnl') {
+        holdings.sort(function(a, b) { return parseFloat(b.pnl) - parseFloat(a.pnl); });
+      } else if (field === 'value') {
+        holdings.sort(function(a, b) { return parseFloat(b.currentValue) - parseFloat(a.currentValue); });
+      }
+
+      var pnlBtn = document.getElementById('sortPnlBtn');
+      var valBtn = document.getElementById('sortValueBtn');
+      if (field === 'pnl') {
+        pnlBtn.className = 'btn btn-secondary btn-sm';
+        valBtn.className = 'btn btn-ghost btn-sm';
+      } else {
+        pnlBtn.className = 'btn btn-ghost btn-sm';
+        valBtn.className = 'btn btn-secondary btn-sm';
+      }
+
+      renderTable();
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        var authStatus = await API.getAuthStatus();
+        if (!authStatus.authenticated) {
+          window.location.href = '/';
+          return;
         }
 
-        function sortBy(field) {
-            if (field === 'pnl') {
-                holdings.sort((a, b) => b.pnlPercentage - a.pnlPercentage);
-            } else if (field === 'value') {
-                holdings.sort((a, b) => b.currentValue - a.currentValue);
-            }
-            renderHoldingsTable(holdings, 'holdings-table');
-        }
+        var name = authStatus.userName || 'Demo User';
+        document.getElementById('userName').textContent = name;
+        document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
 
-        function analyzeStock(symbol) {
-            window.location.href = `/analysis.html?symbol=${symbol}`;
-        }
-    </script>
+        var data = await API.getHoldings();
+        holdings = Array.isArray(data) ? data : (data.holdings || []);
+
+        // Default sort by P&L descending
+        holdings.sort(function(a, b) { return parseFloat(b.pnl) - parseFloat(a.pnl); });
+
+        renderSummary();
+        renderTable();
+      } catch (err) {
+        console.error('Failed to load holdings:', err);
+        var tbody = document.getElementById('holdingsBody');
+        tbody.textContent = '';
+        var errorRow = document.createElement('tr');
+        var errorCell = document.createElement('td');
+        errorCell.setAttribute('colspan', '9');
+        errorCell.style.textAlign = 'center';
+        errorCell.style.padding = '2rem';
+        errorCell.textContent = 'Failed to load holdings. Please try again.';
+        errorRow.appendChild(errorCell);
+        tbody.appendChild(errorRow);
+      }
+    });
+  </script>
 </body>
-
 </html>

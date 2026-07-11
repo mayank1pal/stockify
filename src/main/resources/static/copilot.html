@@ -1,490 +1,395 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="StockMan - Investment Copilot">
-    <title>Investment Copilot - StockMan</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/main.css">
-    <style>
-        .copilot-input-area {
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-lg);
-            padding: var(--space-lg);
-            margin-bottom: var(--space-xl);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockMan — Copilot</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    /*
+     * Bridge styles: copilot.js renders DOM with class names that differ from
+     * the new main.css.  Rather than touching copilot.js we alias the old
+     * names here so every generated element is styled correctly.
+     */
 
-        .copilot-input-area textarea {
-            width: 100%;
-            min-height: 80px;
-            padding: var(--space-md);
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.9375rem;
-            line-height: 1.6;
-            resize: vertical;
-        }
+    /* copilot.js: .copilot-result  —  main.css expects .copilot-response */
+    .copilot-result {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      margin-bottom: var(--space-lg);
+      animation: fadeSlideUp 0.4s ease both;
+    }
 
-        .copilot-input-area textarea:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px var(--accent-glow);
-        }
+    /* copilot.js: .copilot-meta-badges  —  main.css expects .copilot-meta */
+    .copilot-meta-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-lg);
+    }
 
-        .copilot-input-controls {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-            margin-top: var(--space-md);
-        }
+    /* copilot.js uses .recommendation (no .buy), map it */
+    .meta-badge.recommendation {
+      background: var(--success-muted);
+      color: var(--success);
+    }
+    .meta-badge.recommendation.sell {
+      background: var(--danger-muted);
+      color: var(--danger);
+    }
+    .meta-badge.recommendation.hold {
+      background: var(--warning-muted);
+      color: var(--warning);
+    }
 
-        .copilot-input-controls select {
-            flex: 1;
-            max-width: 260px;
-            padding: var(--space-sm) var(--space-md);
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.875rem;
-        }
+    /* copilot.js: .trade-plan-card / .trade-plan-grid  —  main.css: .trade-plan */
+    .trade-plan-card {
+      padding: var(--space-lg);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-lg);
+    }
+    .trade-plan-card h4 {
+      margin-bottom: var(--space-md);
+      font-weight: 600;
+    }
+    .trade-plan-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: var(--space-md);
+    }
 
-        .suggestion-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: var(--space-sm);
-            margin-bottom: var(--space-xl);
-        }
+    /* copilot.js: .agent-reasoning-card  —  main.css: .reasoning-agent */
+    .agent-reasoning-card {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
 
-        .suggestion-chip {
-            padding: var(--space-sm) var(--space-md);
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-full);
-            color: var(--text-secondary);
-            font-size: 0.8125rem;
-            cursor: pointer;
-            transition: var(--transition-fast);
-        }
+    /* copilot.js: .agent-reasoning-header  —  main.css: .reasoning-header */
+    .agent-reasoning-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      background: var(--bg-tertiary);
+      user-select: none;
+    }
+    .agent-reasoning-header:hover {
+      background: var(--bg-hover);
+    }
+    .agent-reasoning-header .agent-info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex: 1;
+    }
+    .agent-reasoning-header .agent-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .agent-reasoning-header .toggle-icon {
+      color: var(--text-muted);
+      transition: transform var(--transition-base);
+      font-size: 0.8rem;
+    }
+    .agent-reasoning-card.expanded .toggle-icon {
+      transform: rotate(180deg);
+    }
 
-        .suggestion-chip:hover {
-            border-color: var(--accent-primary);
-            color: var(--accent-primary);
-            background: rgba(59, 130, 246, 0.08);
-        }
+    /* copilot.js: .agent-reasoning-body  —  main.css: .reasoning-body */
+    .agent-reasoning-body {
+      padding: var(--space-md) var(--space-lg);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.88rem;
+      line-height: 1.7;
+      display: none;
+      color: var(--text-secondary);
+    }
+    .agent-reasoning-card.expanded .agent-reasoning-body {
+      display: block;
+      animation: fadeSlideUp 0.25s ease both;
+    }
 
-        .copilot-response-area {
-            min-height: 200px;
-        }
+    /* copilot.js: .dissenting-views  —  main.css: .dissent-box */
+    .dissenting-views {
+      background: var(--warning-muted);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: var(--radius-md);
+      padding: var(--space-md) var(--space-lg);
+      margin-bottom: var(--space-lg);
+    }
+    .dissenting-views h4 {
+      font-weight: 600;
+      color: var(--warning);
+      font-size: 0.85rem;
+      margin-bottom: var(--space-sm);
+    }
 
-        .copilot-empty-state {
-            text-align: center;
-            padding: var(--space-2xl);
-            color: var(--text-muted);
-        }
+    /* copilot.js: .followup-chip  —  main.css: .chip */
+    .followup-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-xs) var(--space-md);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-default);
+      background: var(--bg-tertiary);
+      color: var(--accent);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .followup-chip:hover {
+      border-color: var(--accent);
+      background: var(--accent-muted);
+    }
+    .followup-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      margin-top: var(--space-lg);
+    }
 
-        .copilot-empty-state .empty-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: var(--bg-tertiary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto var(--space-lg);
-            font-size: 2rem;
-        }
+    /* copilot.js: .suggestion-chip  —  main.css: .chip */
+    .suggestion-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-xs) var(--space-md);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-default);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .suggestion-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-muted);
+    }
 
-        .copilot-loading {
-            text-align: center;
-            padding: var(--space-2xl);
-        }
+    /* copilot.js: .agents-used-info */
+    .agents-used-info {
+      margin-top: var(--space-lg);
+      padding: var(--space-md);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
 
-        .copilot-loading .loader {
-            margin-bottom: var(--space-md);
-        }
+    /* copilot.js: .conversation-divider */
+    .conversation-divider {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: var(--space-xl) 0;
+    }
 
-        .copilot-result {
-            animation: fadeIn 0.3s ease;
-        }
+    /* copilot.js: .user-query-display */
+    .user-query-display {
+      padding: var(--space-md) var(--space-lg);
+      background: var(--accent-muted);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      margin-bottom: var(--space-lg);
+      color: var(--text-primary);
+      font-size: 0.92rem;
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    /* copilot.js: .copilot-loading */
+    .copilot-loading {
+      text-align: center;
+      padding: var(--space-2xl);
+    }
+    .copilot-loading .loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: var(--space-md);
+    }
+    .copilot-loading .loader-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: dotPulse 0.6s ease-in-out infinite alternate;
+    }
+    .copilot-loading .loader-dot:nth-child(2) { animation-delay: 0.15s; }
+    .copilot-loading .loader-dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes dotPulse {
+      from { opacity: 0.3; transform: scale(0.8); }
+      to   { opacity: 1;   transform: scale(1); }
+    }
 
-        .copilot-meta-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: var(--space-sm);
-            margin-bottom: var(--space-lg);
-        }
+    /* copilot.js: .copilot-error */
+    .copilot-error {
+      text-align: center;
+      padding: var(--space-xl);
+      color: var(--danger);
+    }
+    .copilot-error svg { margin-bottom: var(--space-md); }
 
-        .meta-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-xs);
-            padding: var(--space-xs) var(--space-md);
-            border-radius: var(--radius-full);
-            font-size: 0.8125rem;
-            font-weight: 600;
-        }
+    /* copilot.js: .copilot-empty-state */
+    .copilot-empty-state {
+      text-align: center;
+      padding: var(--space-2xl);
+      color: var(--text-muted);
+    }
+    .copilot-empty-state .empty-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--space-lg);
+      font-size: 1.8rem;
+    }
+    .copilot-empty-state h3 { margin-bottom: var(--space-sm); color: var(--text-secondary); }
+    .copilot-empty-state p  { max-width: 420px; margin: 0 auto; line-height: 1.6; }
 
-        .meta-badge.recommendation {
-            background: var(--success-bg);
-            color: var(--success);
-        }
+    /* copilot.js: .copilot-response-area */
+    .copilot-response-area { min-height: 200px; }
 
-        .meta-badge.recommendation.sell {
-            background: var(--danger-bg);
-            color: var(--danger);
-        }
-
-        .meta-badge.recommendation.hold {
-            background: var(--warning-bg);
-            color: var(--warning);
-        }
-
-        .meta-badge.confidence {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--accent-primary);
-        }
-
-        .meta-badge.agreement {
-            background: rgba(139, 92, 246, 0.1);
-            color: var(--accent-secondary);
-        }
-
-        .copilot-summary {
-            padding: var(--space-lg);
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-lg);
-            margin-bottom: var(--space-lg);
-            line-height: 1.7;
-        }
-
-        .trade-plan-card {
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: var(--space-lg);
-            margin-bottom: var(--space-lg);
-            background: var(--bg-tertiary);
-        }
-
-        .trade-plan-card h4 {
-            margin-bottom: var(--space-md);
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-        }
-
-        .trade-plan-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: var(--space-md);
-        }
-
-        .trade-plan-item {
-            padding: var(--space-md);
-            background: var(--bg-secondary);
-            border-radius: var(--radius-md);
-        }
-
-        .trade-plan-item .label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: var(--space-xs);
-        }
-
-        .trade-plan-item .value {
-            font-weight: 600;
-            font-size: 0.9375rem;
-        }
-
-        .reasoning-chain {
-            margin-bottom: var(--space-lg);
-        }
-
-        .reasoning-chain h4 {
-            margin-bottom: var(--space-md);
-        }
-
-        .agent-reasoning-card {
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-sm);
-            overflow: hidden;
-            transition: var(--transition-fast);
-        }
-
-        .agent-reasoning-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: var(--space-md) var(--space-lg);
-            cursor: pointer;
-            background: var(--bg-tertiary);
-            transition: var(--transition-fast);
-        }
-
-        .agent-reasoning-header:hover {
-            background: rgba(59, 130, 246, 0.05);
-        }
-
-        .agent-reasoning-header .agent-info {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-        }
-
-        .agent-reasoning-header .agent-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: var(--radius-sm);
-            background: var(--accent-gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.875rem;
-        }
-
-        .agent-reasoning-header .toggle-icon {
-            transition: transform var(--transition-fast);
-            color: var(--text-muted);
-        }
-
-        .agent-reasoning-card.expanded .toggle-icon {
-            transform: rotate(180deg);
-        }
-
-        .agent-reasoning-body {
-            display: none;
-            padding: var(--space-lg);
-            border-top: 1px solid var(--border-color);
-            line-height: 1.7;
-        }
-
-        .agent-reasoning-card.expanded .agent-reasoning-body {
-            display: block;
-        }
-
-        .dissenting-views {
-            border-left: 3px solid var(--warning);
-            padding: var(--space-md) var(--space-lg);
-            background: var(--warning-bg);
-            border-radius: 0 var(--radius-md) var(--radius-md) 0;
-            margin-bottom: var(--space-lg);
-        }
-
-        .dissenting-views h4 {
-            color: var(--warning);
-            margin-bottom: var(--space-sm);
-        }
-
-        .followup-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: var(--space-sm);
-            margin-top: var(--space-lg);
-        }
-
-        .followup-chip {
-            padding: var(--space-sm) var(--space-md);
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-full);
-            color: var(--accent-primary);
-            font-size: 0.8125rem;
-            cursor: pointer;
-            transition: var(--transition-fast);
-        }
-
-        .followup-chip:hover {
-            border-color: var(--accent-primary);
-            background: rgba(59, 130, 246, 0.08);
-        }
-
-        .agents-used-info {
-            margin-top: var(--space-lg);
-            padding: var(--space-md);
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            font-size: 0.8125rem;
-            color: var(--text-muted);
-        }
-
-        .copilot-error {
-            text-align: center;
-            padding: var(--space-xl);
-            color: var(--danger);
-        }
-
-        .copilot-error svg {
-            margin-bottom: var(--space-md);
-        }
-
-        .conversation-divider {
-            border: none;
-            border-top: 1px solid var(--border-color);
-            margin: var(--space-xl) 0;
-        }
-
-        .user-query-display {
-            padding: var(--space-md) var(--space-lg);
-            background: rgba(59, 130, 246, 0.08);
-            border-left: 3px solid var(--accent-primary);
-            border-radius: 0 var(--radius-md) var(--radius-md) 0;
-            margin-bottom: var(--space-lg);
-            color: var(--text-primary);
-        }
-    </style>
+    /* copilot.js: .copilot-input-area */
+    .copilot-input-area textarea {
+      width: 100%;
+      min-height: 72px;
+      padding: var(--space-md);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      resize: vertical;
+    }
+    .copilot-input-area textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-muted);
+    }
+    .copilot-input-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      margin-top: var(--space-md);
+    }
+    .copilot-input-controls select {
+      flex: 1;
+      max-width: 260px;
+    }
+  </style>
 </head>
-
 <body>
-    <div class="page-wrapper">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-logo">
-                <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" style="stop-color:#3b82f6" />
-                            <stop offset="100%" style="stop-color:#8b5cf6" />
-                        </linearGradient>
-                    </defs>
-                    <rect width="40" height="40" rx="8" fill="url(#logoGrad)" />
-                    <path d="M10 25 L15 17 L20 21 L25 14 L30 19" stroke="white" stroke-width="2" stroke-linecap="round"
-                        fill="none" />
-                </svg>
-                <h1>StockMan</h1>
-            </div>
+  <nav class="navbar">
+    <a href="/" class="navbar-brand"><span class="brand-mark">S</span> StockMan</a>
+    <ul class="navbar-nav" id="navMenu">
+      <li><a href="dashboard.html"><span class="nav-icon">&#9678;</span> Dashboard</a></li>
+      <li><a href="holdings.html"><span class="nav-icon">&#9828;</span> Holdings</a></li>
+      <li><a href="analysis.html"><span class="nav-icon">&#9672;</span> Analysis</a></li>
+      <li><a href="copilot.html" class="active"><span class="nav-icon">&#11041;</span> Copilot</a></li>
+      <li><a href="strategy.html"><span class="nav-icon">&#9670;</span> Strategy</a></li>
+      <li><a href="scanner.html"><span class="nav-icon">◉</span> Scanner</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="navbar-user">
+        <span id="userName"></span>
+        <div class="avatar" id="userAvatar"></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="logout-btn">Logout</button>
+    </div>
+    <button class="nav-toggle" onclick="toggleNav()">&#9776;</button>
+  </nav>
 
-            <ul class="nav-menu">
-                <li class="nav-item"><a href="/dashboard.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="7" height="7" />
-                            <rect x="14" y="3" width="7" height="7" />
-                            <rect x="14" y="14" width="7" height="7" />
-                            <rect x="3" y="14" width="7" height="7" />
-                        </svg>
-                        Dashboard
-                    </a></li>
-                <li class="nav-item"><a href="/holdings.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                        </svg>
-                        Holdings
-                    </a></li>
-                <li class="nav-item"><a href="/analysis.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
-                        </svg>
-                        AI Analysis
-                    </a></li>
-                <li class="nav-item"><a href="/copilot.html" class="nav-link active">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1v3a7 7 0 0 0 14 0v-3h1a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3z" />
-                            <circle cx="9" cy="13" r="1" />
-                            <circle cx="15" cy="13" r="1" />
-                        </svg>
-                        Copilot
-                    </a></li>
-                <li class="nav-item"><a href="/strategy.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 20V10" />
-                            <path d="M18 20V4" />
-                            <path d="M6 20v-4" />
-                        </svg>
-                        Strategy
-                    </a></li>
-                <li class="nav-item"><a href="/scanner.html" class="nav-link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21l-4.35-4.35" />
-                            <path d="M11 8v6" />
-                            <path d="M8 11h6" />
-                        </svg>
-                        Scanner
-                    </a></li>
-            </ul>
+  <!-- Hidden elements for copilot.js init() compatibility -->
+  <span id="user-name" class="hidden"></span>
+  <span id="user-initial" class="hidden"></span>
 
-            <div style="margin-top: auto; padding-top: var(--space-lg); border-top: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-md);">
-                    <div
-                        style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center;">
-                        <span id="user-initial" style="font-weight: 700; color: white;">U</span>
-                    </div>
-                    <div>
-                        <div id="user-name" style="font-weight: 600; font-size: 0.875rem;">Loading...</div>
-                        <div style="color: var(--text-muted); font-size: 0.75rem;">Active</div>
-                    </div>
-                </div>
-                <button id="logout-btn" class="btn btn-secondary btn-sm" style="width: 100%;">Logout</button>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <header style="margin-bottom: var(--space-xl);">
-                <h2>Investment Copilot</h2>
-                <p>AI-powered multi-agent assistant for smarter investment decisions</p>
-            </header>
-
-            <!-- Input Area -->
-            <div class="copilot-input-area">
-                <textarea id="copilotInput"
-                    placeholder="Ask anything about your portfolio, a specific stock, or the market... (e.g., 'Should I increase my position in RELIANCE?', 'Review my portfolio risk')"
-                    rows="3"></textarea>
-                <div class="copilot-input-controls">
-                    <select id="symbolSelect">
-                        <option value="">No specific stock</option>
-                    </select>
-                    <button class="btn btn-primary" id="sendBtn" onclick="sendQuery()">
-                        <span>Ask Copilot</span>
-                        <span class="btn-icon">-></span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Suggested Questions -->
-            <div class="suggestion-chips" id="suggestionChips">
-                <button class="suggestion-chip" onclick="useSuggestion(this)">Should I rebalance my portfolio?</button>
-                <button class="suggestion-chip" onclick="useSuggestion(this)">What are the biggest risks in my holdings?</button>
-                <button class="suggestion-chip" onclick="useSuggestion(this)">Which stocks have the best growth potential?</button>
-                <button class="suggestion-chip" onclick="useSuggestion(this)">Give me a quick portfolio health check</button>
-                <button class="suggestion-chip" onclick="useSuggestion(this)">What sectors am I overexposed to?</button>
-            </div>
-
-            <!-- Response Area -->
-            <div class="copilot-response-area" id="responseArea">
-                <div class="copilot-empty-state" id="emptyState">
-                    <div class="empty-icon">
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5">
-                            <path d="M12 2a3 3 0 0 0-3 3v1H6a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1v3a7 7 0 0 0 14 0v-3h1a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3V5a3 3 0 0 0-3-3z" />
-                            <circle cx="9" cy="13" r="1" />
-                            <circle cx="15" cy="13" r="1" />
-                        </svg>
-                    </div>
-                    <h3>Your Investment Copilot is Ready</h3>
-                    <p>Ask a question above or pick a suggestion to get multi-agent AI analysis of your portfolio and stocks.</p>
-                </div>
-            </div>
-        </main>
+  <div class="main-content">
+    <div class="page-header animate-in">
+      <h1>Investment Copilot</h1>
+      <p class="subtitle">Multi-agent AI analysis for your portfolio decisions</p>
     </div>
 
-    <script src="/scripts/api.js"></script>
-    <script src="/scripts/app.js"></script>
-    <script src="/scripts/copilot.js"></script>
-</body>
+    <!-- Input Area -->
+    <div class="card mb-lg animate-in animate-in-delay-1">
+      <div class="copilot-input-area">
+        <textarea id="copilotInput"
+          placeholder="Ask about your portfolio, a specific stock, or market conditions..."
+          rows="2"></textarea>
+        <div class="copilot-input-controls">
+          <select class="form-select" id="symbolSelect">
+            <option value="">No specific stock</option>
+          </select>
+          <button class="btn btn-primary btn-lg" id="sendBtn" onclick="sendQuery()">Ask Copilot</button>
+        </div>
+      </div>
+    </div>
 
+    <!-- Suggestion Chips -->
+    <div class="suggestion-chips mb-lg animate-in animate-in-delay-1" id="suggestionChips">
+      <button class="suggestion-chip" onclick="useSuggestion(this)">Should I rebalance my portfolio?</button>
+      <button class="suggestion-chip" onclick="useSuggestion(this)">What are the biggest risks in my holdings?</button>
+      <button class="suggestion-chip" onclick="useSuggestion(this)">Which stocks should I add more of?</button>
+      <button class="suggestion-chip" onclick="useSuggestion(this)">Analyze market conditions for my sector exposure</button>
+      <button class="suggestion-chip" onclick="useSuggestion(this)">Give me a 30-day action plan</button>
+    </div>
+
+    <!-- Response Area -->
+    <div class="copilot-response-area" id="responseArea">
+      <div class="copilot-empty-state" id="emptyState">
+        <div class="empty-icon">&#11041;</div>
+        <h3>Your Investment Copilot is Ready</h3>
+        <p>Ask a question above or pick a suggestion to get multi-agent AI analysis of your portfolio and stocks.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="scripts/api.js"></script>
+  <script src="scripts/app.js"></script>
+  <script src="scripts/copilot.js"></script>
+  <script>
+    function toggleNav() {
+      document.getElementById('navMenu').classList.toggle('open');
+    }
+
+    // Bridge: copilot.js init() sets #user-name and #user-initial (old sidebar IDs).
+    // We observe those hidden elements and mirror values into the new navbar.
+    (function bridgeUserInfo() {
+      var hiddenName = document.getElementById('user-name');
+      var hiddenInitial = document.getElementById('user-initial');
+
+      var observer = new MutationObserver(function () {
+        var name = hiddenName.textContent || '';
+        var initial = hiddenInitial.textContent || '';
+        var userNameEl = document.getElementById('userName');
+        var avatarEl = document.getElementById('userAvatar');
+        if (userNameEl) userNameEl.textContent = name;
+        if (avatarEl) avatarEl.textContent = initial;
+      });
+
+      observer.observe(hiddenName, { childList: true, characterData: true, subtree: true });
+      observer.observe(hiddenInitial, { childList: true, characterData: true, subtree: true });
+    })();
+  </script>
+</body>
 </html>
