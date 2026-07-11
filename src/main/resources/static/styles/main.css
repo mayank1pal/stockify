@@ -587,7 +587,7 @@ h4 { font-size: var(--text-lg); font-weight: 500; }
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
   font-family: var(--font-body);
-  font-size: var(--text-base);
+  font-size: 16px; /* hardcoded, not var(--text-base) — the page root is 15px, so 1rem renders at 15px; this needs to be a true 16px to prevent iOS Safari from auto-zooming on input focus */
   color: var(--text-primary);
   transition: border-color var(--transition-fast);
   outline: none;

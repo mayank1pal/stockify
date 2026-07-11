@@ -769,7 +769,7 @@ with:
 
 Run:
 ```bash
-awk 'NR<1128 || NR>1262' src/main/resources/static/styles/main.css | grep -n "font-size:" | grep -v "var(--text-\|0.9em"
+awk 'NR<1138 || NR>1272' src/main/resources/static/styles/main.css | grep -n "font-size:" | grep -v "var(--text-\|0.9em\|^[0-9]*:  font-size: 16px;\|^[0-9]*:  font-size: 15px;"
 ```
 Expected: no output (empty) — every remaining `font-size:` declaration outside the excluded ranges should now use a `var(--text-*)` token.
 
