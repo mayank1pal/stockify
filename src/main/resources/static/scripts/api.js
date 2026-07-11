@@ -126,8 +126,8 @@ const API = {
         return response.json();
     },
 
-    // Scanner methods
-    async getScannerStatus() { 
+    // Scanner endpoints
+    async getScannerStatus() {
         const response = await fetch(`${this.baseUrl}/api/scanner/status`);
         return response.json();
     },
@@ -139,21 +139,21 @@ const API = {
         return response.json();
     },
 
-    async getScannerIndicators(symbol) { 
+    async getScannerIndicators(symbol) {
         const response = await fetch(`${this.baseUrl}/api/scanner/indicators/${symbol}`);
         return response.json();
     },
 
-    async getWatchlist() { 
+    async getWatchlist() {
         const response = await fetch(`${this.baseUrl}/api/user/watchlist`);
         return response.json();
     },
 
-    async updateWatchlist(symbols) { 
+    async updateWatchlist(symbols) {
         const response = await fetch(`${this.baseUrl}/api/user/watchlist`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(symbols)
+            body: JSON.stringify({ symbols })
         });
         return response.json();
     }

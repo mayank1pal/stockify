@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="StockMan Scanner - Live Signal Feed">
+  <title>StockMan — Scanner</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="navbar-brand"><span class="brand-mark">S</span> StockMan</a>
+    <ul class="navbar-nav" id="navMenu">
+      <li><a href="dashboard.html"><span class="nav-icon">◎</span> Dashboard</a></li>
+      <li><a href="holdings.html"><span class="nav-icon">▤</span> Holdings</a></li>
+      <li><a href="analysis.html"><span class="nav-icon">◈</span> Analysis</a></li>
+      <li><a href="copilot.html"><span class="nav-icon">⬡</span> Copilot</a></li>
+      <li><a href="strategy.html"><span class="nav-icon">◆</span> Strategy</a></li>
+      <li><a href="scanner.html" class="active"><span class="nav-icon">◉</span> Scanner</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="navbar-user"><span id="userName"></span><div class="avatar" id="userAvatar"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+    </div>
+    <button class="nav-toggle" onclick="toggleNav()">☰</button>
+  </nav>
+
+  <div class="main-content">
+    <div class="page-header animate-in">
+      <h1>Live Scanner</h1>
+      <p class="subtitle">Real-time trading signals from the market scanner</p>
+    </div>
+
+    <!-- Scanner Status Bar -->
+    <div class="scanner-status-bar card animate-in animate-in-delay-1" id="scanner-status-bar">
+      <div class="scanner-status-item">
+        <span class="connection-dot" id="connection-dot"></span>
+        <span id="connection-label">Connecting...</span>
+      </div>
+      <div class="scanner-status-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M3 9h18" />
+          <path d="M9 21V9" />
+        </svg>
+        <span id="instruments-count">0</span>
+        <span class="text-muted">instruments tracked</span>
+      </div>
+      <div class="scanner-status-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+          <polyline points="16 7 22 7 22 13" />
+        </svg>
+        <span id="signals-today">0</span>
+        <span class="text-muted">signals today</span>
+      </div>
+      <div class="scanner-status-item" style="margin-left: auto;">
+        <span id="last-update" class="text-muted" style="font-size: var(--text-xs);">Never updated</span>
+      </div>
+    </div>
+
+    <!-- Filter Controls -->
+    <div class="scanner-filters card animate-in animate-in-delay-2">
+      <div class="filter-group">
+        <label for="filter-style">Trading Style</label>
+        <select id="filter-style" class="filter-select">
+          <option value="">All</option>
+          <option value="SCALP">Scalp</option>
+          <option value="INTRADAY">Intraday</option>
+          <option value="SWING">Swing</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-strength">Strength</label>
+        <select id="filter-strength" class="filter-select">
+          <option value="">All</option>
+          <option value="MODERATE">Moderate</option>
+          <option value="STRONG">Strong</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="filter-symbol">Symbol</label>
+        <input type="text" id="filter-symbol" class="filter-input" placeholder="e.g. RELIANCE" />
+      </div>
+      <div class="filter-group" style="align-self: flex-end;">
+        <button id="clear-filters-btn" class="btn btn-secondary btn-sm">Clear Filters</button>
+      </div>
+    </div>
+
+    <!-- Signal Feed -->
+    <div class="scanner-feed animate-in animate-in-delay-3" id="scanner-feed">
+      <div class="scanner-feed-empty" id="scanner-feed-empty">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
+        </div>
+        <p>No signals yet. Waiting for market activity...</p>
+        <p style="font-size: var(--text-xs); margin-top: var(--space-sm);">The scanner monitors instruments in real time and surfaces trading signals here.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="scripts/api.js"></script>
+  <script src="scripts/scanner.js"></script>
+  <script>
+    function toggleNav() {
+      document.getElementById('navMenu').classList.toggle('open');
+    }
+
+    async function logout() {
+      await API.logout();
+      window.location.href = '/index.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const authStatus = await API.getAuthStatus();
+      if (!authStatus.authenticated) {
+        window.location.href = '/index.html';
+        return;
+      }
+
+      const displayName = authStatus.userName || 'Demo User';
+      document.getElementById('userName').textContent = displayName;
+      const initials = displayName.split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().substring(0, 2);
+      document.getElementById('userAvatar').textContent = initials;
+
+      Scanner.init();
+    });
+  </script>
+</body>
+</html>

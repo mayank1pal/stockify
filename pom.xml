@@ -75,13 +75,13 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- WebSocket -->
+        <!-- WebSocket support -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
-        <!-- Telegram Bot -->
+        <!-- Telegram Bot API -->
         <dependency>
             <groupId>com.github.pengrad</groupId>
             <artifactId>java-telegram-bot-api</artifactId>
@@ -115,7 +115,7 @@
             <version>33.0.0-jre</version>
         </dependency>
 
-        <!-- Micrometer (metrics) -->
+        <!-- Actuator / Micrometer (metrics) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
